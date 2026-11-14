@@ -18,14 +18,18 @@ from astropy.time import Time
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
+from .archive.skybot import known_object
 from .archive.skyindex import SkyIndex
 from .science import parallax
 from .focus_service import focus_body
+from .models import MoversResponse
+from .movers_service import MAX_RATE_ARCSEC_H, VISIBLE_V, movers_in_field
 from .science.focus import INFINITY_AU, judge
 from .science.stack import DETECTOR_RANGE_UM, PIXEL_ARCSEC, build_stack
 from .targets import TARGETS, propagate
 
 SCHEMA = 1
+RELEASE = "SPHEREx DR1 + QR3 (pipeline R7), read from the public AWS bucket"
 CACHE = Path(__file__).resolve().parents[2] / "data" / "cache" / "stacks"
 CITATION = (
     "This work makes use of data products from the Spectro-Photometer for the History of the Universe, "
@@ -113,7 +117,7 @@ def stack(
         "exposuresRequested": st.n_requested,
         "exposuresRead": st.n_read,
         "seconds": round(time.time() - t0, 2),
-        "release": "SPHEREx DR1 + QR3 (pipeline R7), read from the public AWS bucket",
+        "release": RELEASE,
         "citation": CITATION,
         "source": "archive",
     }
@@ -227,30 +231,63 @@ def focus(body: str, visit: int = Query(0, ge=0, le=20)):
     return payload
 
 
-def known_object(ra: float, dec: float, mjd: float, radius_arcsec: float = 40.0) -> dict:
-    """Ask IMCCE SkyBoT whether a known Solar System object was at this position at this time."""
-    epoch = Time(mjd, format="mjd").isot
-    try:
-        r = requests.get(
-            "https://ssp.imcce.fr/webservices/skybot/api/conesearch.php",
-            params={"-ep": epoch, "-ra": ra, "-dec": dec, "-rd": radius_arcsec / 3600, "-mime": "json", "-output": "object", "-loc": "500", "-filter": "120", "-objFilter": "111", "-from": "SEDNA", "-refsys": "EQJ2000"},
-            timeout=25,
-        )
-        rows = r.json() if r.ok and r.text.strip().startswith("[") else []
-    except Exception:
-        return {"status": "unavailable", "message": "The known-object service (IMCCE SkyBoT) did not answer."}
-    if not rows:
-        return {"status": "none", "message": f"No known asteroid or comet within {radius_arcsec:.0f} arcsec at that time (IMCCE SkyBoT)."}
-    best = min(rows, key=lambda o: float(o.get("d (arcsec)", 1e9)))
-    return {
-        "status": "known",
-        "name": str(best.get("Name", "")).strip(),
-        "number": best.get("Num"),
-        "class": best.get("Class"),
-        "vMag": best.get("VMag (mag)"),
-        "separationArcsec": best.get("d (arcsec)"),
-        "message": "A known object was here at that time (IMCCE SkyBoT).",
+@app.get("/api/movers", response_model=MoversResponse)
+def movers(ra: float = Query(..., ge=0, lt=360), dec: float = Query(..., ge=-90, le=90), fov: float = Query(6.0, ge=1.0, le=15.0)):
+    """Known asteroids, comets and dwarf planets that crossed the field during SPHEREx's visits (IMCCE SkyBoT)."""
+    key = hashlib.sha1(f"movers|{SCHEMA}|{ra:.5f}|{dec:.5f}|{fov:.2f}|{index().n}".encode()).hexdigest()
+    path = CACHE / f"{key}.json"
+    if path.exists():
+        payload = json.loads(path.read_text())
+        payload["source"] = "cache"
+        return payload
+    t0 = time.time()
+    visits, found, n_queries, n_failed = movers_in_field(index(), ra, dec, fov)
+    if not visits:
+        raise HTTPException(404, detail={"code": "OUT_OF_COVERAGE", "message": "SPHEREx has no usable exposure of this position in the indexed data."})
+    status = "ok" if n_failed == 0 else ("unavailable" if n_failed == n_queries else "partial")
+    shown = [(vi, c) for vi, c in found if c.v is None or c.v <= VISIBLE_V]
+    payload = {
+        "schemaVersion": SCHEMA,
+        "release": RELEASE,
+        "center": {"ra": ra, "dec": dec},
+        "fovArcmin": fov,
+        "status": status,
+        "queries": n_queries,
+        "failedQueries": n_failed,
+        "visibleV": VISIBLE_V,
+        "maxRateArcsecPerHour": MAX_RATE_ARCSEC_H,
+        "visits": [{"index": vi, "start": iso(v[0].mjd), "end": iso(v[-1].mjd)} for vi, v in enumerate(visits)],
+        "movers": [
+            {
+                "name": c.name,
+                "number": c.number,
+                "category": c.cls,
+                "vMag": c.v,
+                "visible": c.v is not None and c.v <= VISIBLE_V,
+                "rateArcsecPerHour": round(c.rate_arcsec_h, 2),
+                "distanceAu": None if c.distance_au is None else round(c.distance_au, 3),
+                "visit": vi,
+                "firstInField": iso(c.mjd[0]),
+                "lastInField": iso(c.mjd[-1]),
+                "closestDate": iso(c.closest_mjd),
+                "closestMjd": c.closest_mjd,
+                "closestArcsec": round(c.closest_arcsec, 1),
+                "track": [{"mjd": t, "ra": r, "dec": d} for t, r, d in zip(c.mjd, c.ra, c.dec)],
+            }
+            for vi, c in shown
+        ],
+        "fainter": len(found) - len(shown),
+        "method": (
+            "IMCCE SkyBoT cone searches, one per group of exposures no longer than a day, geocentric; each body moved "
+            f"linearly within its group. Bodies faster than {MAX_RATE_ARCSEC_H:.0f} arcsec/h (some near-Earth objects) can be missed."
+        ),
+        "seconds": round(time.time() - t0, 2),
+        "source": "archive",
     }
+    if status == "ok":  # a partial answer is not cached, so the next request retries the failed searches
+        CACHE.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(payload))
+    return payload
 
 
 @app.get("/api/film")

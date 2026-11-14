@@ -13,7 +13,7 @@ Named after 90377 Sedna, found on 14 November 2003 by comparing images of the sa
 - **Any position, fast.** SEDNA keeps its own index of every SPHEREx exposure (272,963 detector-1 frames, April 2025 to October 2026), built from the public archive bucket. A lookup takes about 40 ms and does not depend on the archive's search services.
 - **Aligned visits.** Exposures are resampled onto one north-up grid and averaged per visit and detector, with one brightness stretch for all dates.
 - **Compare.** Blink, difference (later minus earlier) and sum; the six detectors from 0.75 to 5 µm; fields of view from 4 to 15 arcmin.
-- **Known or new?** Gaia DR3 stars drawn at their position on each date, a click tells you whether a point is a known star; IMCCE SkyBoT says whether a known asteroid or comet was there.
+- **Known or new?** Gaia DR3 stars drawn at their position on each date, a click tells you whether a point is a known star. For every field, SEDNA asks IMCCE SkyBoT which known asteroids, comets and dwarf planets crossed it during each visit, explains that moving bodies smear out of visit averages, and opens the single exposures at the moment of the crossing with the body ringed.
 - **Single exposures.** Every exposure of a visit in time order. Pause, click any point, and measure its distance with the focus.
 - **Distance focus.** Three steps: watch the point walk among the stars, turn the knob until it snaps into focus, check the distance against JPL Horizons.
 - **Shareable.** The URL reproduces the view, and there is a direct link to the same sky in WiseView.

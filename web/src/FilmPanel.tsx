@@ -1,26 +1,34 @@
 // Single exposures of one visit, in time order. Nothing is averaged, so a body that moves
 // within the visit is still there. Pause, click a point, and send it to the distance focus.
 // Code written with AI assistance (Claude); see AI_USAGE.md.
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ApiError, fetchFilm, type Film } from "./lib/api";
-import { formatSexagesimal, gridToSky } from "./lib/coords";
+import { formatSexagesimal, gridToSky, skyToGrid } from "./lib/coords";
+import { categoryLabel, trackPointAt, type Mover } from "./lib/movers";
 import { renderFrame } from "./lib/render";
 
 export type Seed = { ra: number; dec: number; mjd: number };
-type Props = { ra: number; dec: number; fov: number; onFocus: (seed: Seed) => void };
+type Props = {
+  ra: number;
+  dec: number;
+  fov: number;
+  visit: number;
+  startMjd: number | null; // open at the exposure closest to this time, paused
+  movers: Mover[];
+  onVisit: (visit: number) => void;
+  onFocus: (seed: Seed) => void;
+};
 
 const LIMITS = { lo: -0.8, hi: 12 };
 
-export default function FilmPanel({ ra, dec, fov, onFocus }: Props) {
-  const [visit, setVisit] = useState(0);
+export default function FilmPanel({ ra, dec, fov, visit, startMjd, movers, onVisit, onFocus }: Props) {
   const [film, setFilm] = useState<Film | null>(null);
   const [status, setStatus] = useState<{ kind: "loading" | "ready" | "error"; message?: string }>({ kind: "loading" });
   const [frame, setFrame] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [pick, setPick] = useState<{ col: number; row: number; frame: number } | null>(null);
+  const [showKnown, setShowKnown] = useState(true);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => setVisit(0), [ra, dec, fov]);
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -30,8 +38,6 @@ export default function FilmPanel({ ra, dec, fov, onFocus }: Props) {
     fetchFilm(ra, dec, fov, visit, ctrl.signal)
       .then((f) => {
         setFilm(f);
-        setFrame(0);
-        setPlaying(!matchMedia("(prefers-reduced-motion: reduce)").matches);
         setStatus({ kind: "ready" });
       })
       .catch((err) => {
@@ -40,6 +46,22 @@ export default function FilmPanel({ ra, dec, fov, onFocus }: Props) {
       });
     return () => ctrl.abort();
   }, [ra, dec, fov, visit]);
+
+  // open at the requested moment, paused; otherwise play from the start
+  useEffect(() => {
+    if (!film) return;
+    if (startMjd !== null) {
+      let best = 0;
+      film.frames.forEach((f, i) => { if (Math.abs(f.mjd - startMjd) < Math.abs(film.frames[best].mjd - startMjd)) best = i; });
+      if (Math.abs(film.frames[best].mjd - startMjd) < 2) {
+        setFrame(best);
+        setPlaying(false);
+        return;
+      }
+    }
+    setFrame(0);
+    setPlaying(!matchMedia("(prefers-reduced-motion: reduce)").matches);
+  }, [film, startMjd]);
 
   useEffect(() => {
     if (!playing || !film || film.frames.length < 2) return;
@@ -61,6 +83,16 @@ export default function FilmPanel({ ra, dec, fov, onFocus }: Props) {
 
   const size = film?.grid.size ?? 1;
   const current = film?.frames[Math.min(frame, (film?.frames.length ?? 1) - 1)];
+  const inVisit = useMemo(() => (film ? movers.filter((m) => m.visit === film.visit) : []), [film, movers]);
+  const marks = useMemo(() => {
+    if (!film || !current || !showKnown) return [];
+    return inVisit.flatMap((m) => {
+      const p = trackPointAt(m, current.mjd);
+      if (!p) return [];
+      const g = skyToGrid(p.ra, p.dec, film.center, size, film.grid.pixelScaleArcsec);
+      return [{ m, x: g.x + 0.5, y: size - 1 - g.y + 0.5 }];
+    });
+  }, [film, current, showKnown, inVisit, size]);
 
   function onClick(e: React.MouseEvent<HTMLDivElement>) {
     if (!film) return;
@@ -98,12 +130,21 @@ export default function FilmPanel({ ra, dec, fov, onFocus }: Props) {
         {status.kind === "loading" && <p className="stage-msg" role="status">Reading every single exposure of this visit…</p>}
         {status.kind === "error" && <p className="stage-msg error" role="alert">{status.message}</p>}
         <canvas ref={canvasRef} hidden={status.kind !== "ready"} />
-        {film && pick && (
+        {film && (pick || marks.length > 0) && (
           <svg viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
-            <g stroke="var(--red-text)" strokeLinecap="round" strokeWidth={0.22} transform={`translate(${pick.col + 0.5} ${size - 1 - pick.row + 0.5})`}>
-              <line x1={-3.6} y1={0} x2={-1.8} y2={0} /><line x1={1.8} y1={0} x2={3.6} y2={0} />
-              <line x1={0} y1={-3.6} x2={0} y2={-1.8} /><line x1={0} y1={1.8} x2={0} y2={3.6} />
-            </g>
+            {/* rings only: names go in the legend so no text covers the data; numbers only when two or more share a frame */}
+            {marks.map(({ m, x, y }, i) => (
+              <g key={m.number ?? m.name} stroke="var(--ice)" fill="none">
+                <circle cx={x} cy={y} r={2.6} strokeWidth={0.16} />
+                {marks.length > 1 && <text x={x + 2.4} y={y - 2.4} fill="var(--ice)" stroke="none" fontSize={1.6} fontFamily="var(--font-data)">{i + 1}</text>}
+              </g>
+            ))}
+            {pick && (
+              <g stroke="var(--red-text)" strokeLinecap="round" strokeWidth={0.22} transform={`translate(${pick.col + 0.5} ${size - 1 - pick.row + 0.5})`}>
+                <line x1={-3.6} y1={0} x2={-1.8} y2={0} /><line x1={1.8} y1={0} x2={3.6} y2={0} />
+                <line x1={0} y1={-3.6} x2={0} y2={-1.8} /><line x1={0} y1={1.8} x2={0} y2={3.6} />
+              </g>
+            )}
           </svg>
         )}
       </div>
@@ -118,11 +159,24 @@ export default function FilmPanel({ ra, dec, fov, onFocus }: Props) {
               <div className="chips" role="group" aria-label="Visit">
                 <span className="eyebrow">Visit</span>
                 {Array.from({ length: film.visits }, (_, v) => (
-                  <button key={v} type="button" className="opt mono" aria-pressed={visit === v} onClick={() => setVisit(v)}>{v + 1}</button>
+                  <button key={v} type="button" className="opt mono" aria-pressed={film.visit === v} onClick={() => onVisit(v)}>{v + 1}</button>
                 ))}
               </div>
             )}
+            {inVisit.length > 0 && (
+              <button type="button" className="opt" aria-pressed={showKnown} onClick={() => setShowKnown((s) => !s)}>
+                <span className="dot" />Known objects
+              </button>
+            )}
           </div>
+          {marks.length > 0 && (
+            <p className="legend">
+              <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="4.5" fill="none" stroke="var(--ice)" strokeWidth="1" /></svg>
+              {marks.length === 1
+                ? `${marks[0].m.name}, a known ${categoryLabel(marks[0].m)}, where IMCCE SkyBoT puts it at this moment.`
+                : `Known bodies where IMCCE SkyBoT puts them at this moment: ${marks.map(({ m }, i) => `${i + 1}. ${m.name} (${categoryLabel(m)})`).join("; ")}.`}
+            </p>
+          )}
           {!pick ? (
             <p>
               <strong>Every single exposure of this visit, one after the other.</strong> Stars stay where they are. Anything that walks, or shows up in only a few exposures, is close to us. Pause and

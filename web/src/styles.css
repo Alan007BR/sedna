@@ -79,6 +79,17 @@ a { color: inherit; }
 .verdict, .note-line { width: 100%; max-width: 620px; margin: 0; font-size: 13px; color: var(--muted-strong); }
 .verdict strong { color: var(--ice); font-weight: 500; }
 .note-line { color: var(--muted); }
+.movers { width: 100%; max-width: 620px; display: grid; gap: 6px; font-size: 13px; line-height: 19px; color: var(--muted-strong); }
+.movers p { margin: 0; }
+.movers strong { color: var(--ice); font-weight: 500; }
+.movers ul { list-style: none; margin: 0; padding: 0; display: grid; }
+.movers li { display: flex; flex-wrap: wrap; align-items: center; gap: 0 14px; border-top: 1px solid var(--line); }
+.movers li .name { color: var(--fg); font-weight: 500; }
+.movers li .text { margin-left: auto; color: var(--ice); }
+.movers li .text:hover { color: var(--fg); }
+.movers .sub { color: var(--muted); font-size: 12px; }
+.legend { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 12px; line-height: 17px; color: var(--muted-strong); }
+.legend svg { flex: none; }
 
 .timeline { grid-column: 1 / -1; justify-self: center; width: min(760px, 100%); display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px; }
 .play { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line-strong); display: grid; place-items: center; }

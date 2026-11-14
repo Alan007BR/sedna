@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import FilmPanel, { type Seed } from "./FilmPanel";
 import FocusPanel from "./FocusPanel";
+import MoversNote, { type MoversState } from "./MoversNote";
 import { ApiError, fetchFocus, fetchGaia, fetchHealth, fetchStack, fetchTargets, type GaiaSource, type Stack, type Target } from "./lib/api";
 import { formatSexagesimal, gridToSky, mjdToYear, parseTarget, skyToGrid } from "./lib/coords";
+import { fetchMovers } from "./lib/movers";
 import { differenceLimit, mean, renderDifference, renderFrame, sharedLimits, subtract } from "./lib/render";
 
 type Mode = "blink" | "diff" | "sum" | "film" | "focus";
@@ -15,7 +17,9 @@ const MODES: { id: Mode; label: string }[] = [
   { id: "film", label: "Single exposures" },
   { id: "focus", label: "Distance focus" },
 ];
-type View = { ra: number; dec: number; fov: number; det: number; mode: Mode; target: string | null; gaia: boolean; invert: boolean; fps: number };
+// fv: single-exposure visit (0-based; 1-based in the URL); ft: open the single exposures at this MJD
+type View = { ra: number; dec: number; fov: number; det: number; mode: Mode; target: string | null; gaia: boolean; invert: boolean; fps: number; fv: number; ft: number | null };
+const VIEW_DEFAULTS = { fov: 6, det: 2, mode: "blink" as Mode, gaia: true, invert: false, fps: 2, fv: 0, ft: null };
 
 const DETECTORS = [
   { id: 1, range: "0.75–1.09 µm" },
@@ -35,7 +39,9 @@ function readView(): View | null {
   const fov = FOVS.includes(Number(p.get("fov"))) ? Number(p.get("fov")) : 6;
   const det = Number(p.get("band")) >= 1 && Number(p.get("band")) <= 6 ? Number(p.get("band")) : 2;
   const mode = MODES.some((m) => m.id === p.get("mode")) ? (p.get("mode") as Mode) : "blink";
-  return { ra, dec, fov, det, mode, target: p.get("target"), gaia: p.get("gaia") !== "0", invert: p.get("invert") === "1", fps: Number(p.get("speed")) || 2 };
+  const fv = Math.max(0, Math.min(20, Math.round(Number(p.get("visit")) || 1) - 1));
+  const ft = p.has("t") && Number.isFinite(Number(p.get("t"))) ? Number(p.get("t")) : null;
+  return { ra, dec, fov, det, mode, target: p.get("target"), gaia: p.get("gaia") !== "0", invert: p.get("invert") === "1", fps: Number(p.get("speed")) || 2, fv, ft };
 }
 
 function writeView(v: View, push: boolean) {
@@ -49,6 +55,8 @@ function writeView(v: View, push: boolean) {
   if (!v.gaia) p.set("gaia", "0");
   if (v.invert) p.set("invert", "1");
   if (v.fps !== 2) p.set("speed", String(v.fps));
+  if (v.mode === "film" && v.fv > 0) p.set("visit", String(v.fv + 1));
+  if (v.mode === "film" && v.ft !== null) p.set("t", v.ft.toFixed(5));
   const url = `${location.pathname}?${p}`;
   if (push) history.pushState(null, "", url);
   else history.replaceState(null, "", url);
@@ -70,6 +78,7 @@ export default function App() {
   const [picked, setPicked] = useState<GaiaSource | null>(null);
   const [health, setHealth] = useState<string | null>(null);
   const [seed, setSeed] = useState<Seed | null>(null);
+  const [movers, setMovers] = useState<MoversState>({ kind: "loading" });
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const update = useCallback((patch: Partial<View>, push = false) => {
@@ -110,6 +119,13 @@ export default function App() {
         setStatus({ kind: "error", message: err instanceof ApiError ? err.message : "Something went wrong while loading this field." });
       });
     fetchGaia(view.ra, view.dec, view.fov, ctrl.signal).then((g) => setGaia(g.sources)).catch(() => setGaia([]));
+    setMovers({ kind: "loading" });
+    fetchMovers(view.ra, view.dec, view.fov, ctrl.signal)
+      .then((data) => setMovers({ kind: "ready", data }))
+      .catch((err) => {
+        if (err.name === "AbortError") return;
+        setMovers({ kind: "error", message: "Known asteroids and comets could not be checked for this field." });
+      });
     return () => ctrl.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queryKey]);
@@ -164,8 +180,8 @@ export default function App() {
   }, [frames.length, update]);
 
   function go(ra: number, dec: number, targetId: string | null) {
-    const base = view ?? { fov: 6, det: 2, mode: "blink" as Mode, gaia: true, invert: false, fps: 2 };
-    const next: View = { ...base, mode: base.mode === "focus" ? "blink" : base.mode, ra, dec, target: targetId } as View;
+    const base = view ?? VIEW_DEFAULTS;
+    const next: View = { ...base, mode: base.mode === "focus" ? "blink" : base.mode, ra, dec, target: targetId, fv: 0, ft: null };
     writeView(next, true);
     setView(next);
     setInputError(null);
@@ -184,7 +200,7 @@ export default function App() {
       } catch {
         /* fall back to the approximate position; the focus panel reports the error */
       }
-      const next: View = { ...(view ?? { fov: 6, det: 2, gaia: true, invert: false, fps: 2 }), ra, dec, target: t.id, mode: "focus" } as View;
+      const next: View = { ...(view ?? VIEW_DEFAULTS), ra, dec, target: t.id, mode: "focus", fv: 0, ft: null };
       writeView(next, true);
       setView(next);
       setInputError(null);
@@ -347,7 +363,16 @@ export default function App() {
           {view.mode === "focus" ? (
             <FocusPanel body={target?.kind === "distance" ? target : null} seed={target?.kind === "distance" ? null : seed} controls={targets.filter((t) => t.kind === "distance")} onOpen={openTarget} />
           ) : view.mode === "film" ? (
-            <FilmPanel ra={view.ra} dec={view.dec} fov={view.fov} onFocus={(s) => { setSeed(s); update({ mode: "focus", target: null }, true); }} />
+            <FilmPanel
+              ra={view.ra}
+              dec={view.dec}
+              fov={view.fov}
+              visit={view.fv}
+              startMjd={view.ft}
+              movers={movers.kind === "ready" ? movers.data.movers.filter((m) => m.visible) : []}
+              onVisit={(v) => update({ fv: v, ft: null }, true)}
+              onFocus={(s) => { setSeed(s); update({ mode: "focus", target: null }, true); }}
+            />
           ) : (
           <section className="stage-wrap">
             <div className="caption mono">
@@ -405,6 +430,7 @@ export default function App() {
                 about {shiftPx(picked).toFixed(2)} pixel over the dates shown.
               </p>
             )}
+            <MoversNote state={movers} onShow={(m) => update({ mode: "film", fv: m.visit, ft: m.closestMjd }, true)} />
             {target && <p className="note-line">{target.note}</p>}
           </section>
           )}

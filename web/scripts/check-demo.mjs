@@ -139,6 +139,20 @@ for (const vp of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
     if (hit.length) throw new Error(`HUD over the data: ${hit.join(", ")}`);
     await page.screenshot({ path: join(EVIDENCE, `demo-sky-${vp.width}.png`) });
     const zoom = await page.locator(".hud-zoom").innerText();
+    // everything the void view offers is here too: click the star, read the verdict, measure it
+    await page.waitForSelector(".sky-marks circle", { timeout: T });
+    const f = await page.locator(".sky-frame").boundingBox();
+    await page.mouse.click(f.x + f.width / 2, f.y + f.height / 2);
+    await page.waitForSelector(".sky-drawer .verdict", { timeout: T });
+    const covered = await page.evaluate(() => {
+      const r = (s) => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); return b.width ? b : null; };
+      const w = r(".sky-frame"), d = r(".sky-drawer");
+      return d && d.left < w.right - 1 && d.right > w.left + 1 && d.top < w.bottom - 1 && d.bottom > w.top + 1;
+    });
+    if (covered) throw new Error("the details drawer covers the data");
+    await page.getByRole("button", { name: /Measure Barnard's Star.s brightness and spectrum/ }).click();
+    await page.waitForSelector(".sky-drawer .lens-summary", { timeout: T });
+    await page.screenshot({ path: join(EVIDENCE, `demo-sky-details-${vp.width}.png`) });
     await page.keyboard.press("Escape");
     await page.waitForTimeout(300);
     if (await page.locator(".sky").count()) throw new Error("Esc did not leave the sky view");

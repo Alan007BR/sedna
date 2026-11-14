@@ -190,7 +190,7 @@ export default function App() {
   // the pixels on screen; the sky view paints the same ones
   const frameImages = useMemo(() => frames.map((f) => f.image), [frames]);
   const viewMode: ViewMode = view?.mode === "diff" || view?.mode === "sum" ? view.mode : "blink";
-  const canSky = !!view && (view.mode === "blink" || view.mode === "diff" || view.mode === "sum");
+  const canSky = !!view;
 
   // draw
   useEffect(() => {
@@ -345,7 +345,14 @@ export default function App() {
     const sky = gridToSky(col, row, stack.center, size, scale);
     const v = current.image[row * size + col];
     setReadout(`${formatSexagesimal(sky.ra, sky.dec)}  ·  ${Number.isFinite(v) ? v.toFixed(2) + " MJy/sr" : "no data"}`);
-    if (pick) {
+    if (pick) pickAt(col, rowScreen);
+  }
+
+  /** A click on the sky: the Gaia star under it, if any, and the point to measure. ``rowScreen`` counts from the top. */
+  function pickAt(col: number, rowScreen: number) {
+    if (!stack) return;
+    const row = size - 1 - rowScreen;
+    {
       const near = gaiaMarks
         .map((m) => ({ m, d: Math.hypot(m.x - (col + 0.5), m.y - (rowScreen + 0.5)) }))
         .sort((a, b) => a.d - b.d)[0];
@@ -537,28 +544,112 @@ export default function App() {
     );
   }
 
+  // what the void view shows around the sky; the sky view shows the same elements in its drawer
+  const detailsEl = !view ? null : (
+    <>
+            {coach}
+            {view.ruler && rulerPair && (
+              <RulerPanel state={ruler} fromLabel={dateLabel(rulerPair.from.start)} toLabel={dateLabel(rulerPair.to.start)} onFocus={() => update({ mode: "film" }, true)} />
+            )}
+            {picked && (
+              <p className="verdict" role="status">
+                <strong>Known star.</strong> Gaia DR3 {picked.id}, G = {picked.g?.toFixed(1) ?? "?"}. Catalogue motion {(Math.hypot(picked.pmRa ?? 0, picked.pmDec ?? 0) / 1000).toFixed(2)}″ per year:
+                about {shiftPx(picked).toFixed(2)} pixel over the dates shown.
+              </p>
+            )}
+            {clickSky && !view.bp && (
+              <div className="focus-actions measure">
+                <button type="button" className="text ice" onClick={() => update({ bp: `${clickSky.ra.toFixed(5)},${clickSky.dec.toFixed(5)}` }, true)}>
+                  Measure brightness and spectrum {clickSky.star ? "of this star" : "here"}
+                </button>
+              </div>
+            )}
+            {target && target.kind !== "distance" && !view.bp && (
+              <div className="focus-actions measure">
+                <button type="button" className="text ice" onClick={() => update({ bp: target.id }, true)}>
+                  Measure {target.name}&rsquo;s brightness and spectrum
+                </button>
+              </div>
+            )}
+            {lens && (
+              <Suspense fallback={<p className="note-line" role="status">Opening the brightness lens…</p>}>
+                <BrightnessPanel ra={lens.ra} dec={lens.dec} target={lens.target} label={lens.label} onClose={() => update({ bp: null }, true)} />
+              </Suspense>
+            )}
+            <MoversNote state={movers} onShow={(m) => update({ mode: "film", fv: m.visit, ft: m.closestMjd }, true)} />
+            {target && <p className="note-line">{target.note}</p>}
+    </>
+  );
+  const modePanelEl = !view ? null : (
+    view.mode === "follow" ? (
+            <FollowPanel body={view.target ?? "sedna"} onDistance={() => startMission(MISSIONS[2])} />
+          ) : view.mode === "focus" ? (
+            <FocusPanel
+              body={target?.kind === "distance" ? target : null}
+              seed={target?.kind === "distance" ? null : seed}
+              controls={targets.filter((t) => t.kind === "distance")}
+              onOpen={openTarget}
+              onProgress={onFocusProgress}
+              header={coach}
+            />
+          ) : view.mode === "film" ? (
+            <FilmPanel
+              ra={view.ra}
+              dec={view.dec}
+              fov={view.fov}
+              visit={view.fv}
+              startMjd={view.ft}
+              movers={movers.kind === "ready" ? movers.data.movers.filter((m) => m.visible) : []}
+              onVisit={(v) => update({ fv: v, ft: null }, true)}
+              onFocus={(s) => { setSeed(s); update({ mode: "focus", target: null }, true); }}
+            />
+    ) : null
+  );
+
   const skyEl =
-    view?.sky && canSky && stack && status.kind === "ready" && frames.length > 0 && limits && current ? (
+    view?.sky ? (
       <SkyView
-        size={size}
+        size={stack ? size : Math.round((view.fov * 60) / 6.15) | 1}
         pixelArcsec={scale}
-        center={stack.center}
+        center={stack?.center ?? { ra: view.ra, dec: view.dec }}
         frames={frameImages}
         epoch={epoch}
         mode={viewMode}
-        limits={limits}
+        appMode={view.mode}
+        modes={MODES}
+        limits={limits ?? { lo: 0, hi: 1 }}
         invert={view.invert}
+        status={
+          view.mode === "follow"
+            ? "Sedna is stacked along its orbit in the panel on the right."
+            : status.kind === "loading"
+              ? "Reading SPHEREx exposures from the archive…"
+              : status.kind === "error"
+                ? status.message ?? "This field could not be loaded."
+                : status.kind === "ready" && !frames.length
+                  ? `No exposures of this field in detector ${view.det}. Try another detector.`
+                  : null
+        }
         title={target?.name ?? `${view.ra.toFixed(4)} ${view.dec.toFixed(4)}`}
-        caption={[
-          view.mode === "diff" && frames.length > 1 ? `${dateLabel(frames[frames.length - 1].start)} − ${dateLabel(frames[0].start)}` : view.mode === "sum" ? `Sum of ${frames.length} visits` : dateLabel(current.start),
-          `D${view.det} · ${DETECTORS[view.det - 1].range}`,
-          `${view.mode === "blink" ? current.exposures : frames.reduce((n, f) => n + f.exposures, 0)} exp.`,
-        ]}
+        caption={
+          current
+            ? [
+                view.mode === "diff" && frames.length > 1 ? `${dateLabel(frames[frames.length - 1].start)} − ${dateLabel(frames[0].start)}` : view.mode === "sum" ? `Sum of ${frames.length} visits` : dateLabel(current.start),
+                `D${view.det} · ${DETECTORS[view.det - 1].range}`,
+                `${view.mode === "diff" || view.mode === "sum" ? frames.reduce((n, f) => n + f.exposures, 0) : current.exposures} exp.`,
+              ]
+            : [`D${view.det} · ${DETECTORS[view.det - 1].range}`]
+        }
         windowLabel={`SPHEREx · ${view.fov}′ · ${frames.length} ${frames.length === 1 ? "epoch" : "epochs"}`}
         det={view.det}
         detectors={DETECTORS}
+        fov={view.fov}
+        fovs={FOVS}
         gaia={view.gaia ? gaiaMarks.map((m) => ({ id: m.s.id, x: m.x, y: m.y, fast: shiftPx(m.s) > 0.3 })) : null}
+        pickedId={picked?.id ?? null}
+        measured={lensMark ?? (clickSky && stack ? toSvg(clickSky.ra, clickSky.dec) : null)}
         predicted={predicted}
+        rulerMarks={view.ruler && ruler.kind === "ready" && rulerAnchor && stack ? <RulerMarks ruler={ruler.data} anchor={toSvg(rulerAnchor.ra, rulerAnchor.dec)} size={size} scale={scale} /> : null}
         ticks={frames.map((f, i) => {
           const first = visitOf(frames[0].visit)?.midMjd ?? 0;
           const last = visitOf(frames[frames.length - 1].visit)?.midMjd ?? 1;
@@ -568,19 +659,30 @@ export default function App() {
         playing={playing}
         fps={view.fps}
         spectrumQuery={{ ra: view.ra, dec: view.dec, target: target && target.kind !== "distance" ? target.id : null }}
+        details={modePanelEl ?? detailsEl}
+        attention={`${picked?.id ?? ""}|${clickSky ? `${clickSky.ra.toFixed(5)},${clickSky.dec.toFixed(5)}` : ""}|${view.bp ?? ""}|${view.mode}|${view.mission ?? ""}|${view.ruler}`}
+        overlays={{ invert: view.invert, ruler: view.ruler, wiseview: `http://byw.tools/wiseview#ra=${view.ra.toFixed(5)}&dec=${view.dec.toFixed(5)}&size=${Math.round(view.fov * 60)}&band=2` }}
+        onPick={pickAt}
         onPlay={() => setPlaying((v) => !v)}
         onSpeed={() => update({ fps: view.fps === 1 ? 2 : view.fps === 2 ? 4 : 1 })}
-        onMode={(m) => update({ mode: m })}
+        onMode={(m) => update({ mode: m as Mode }, true)}
         onDet={(d) => update({ det: d })}
+        onFov={(f) => update({ fov: f }, true)}
         onGaia={() => update({ gaia: !view.gaia })}
+        onInvert={() => update({ invert: !view.invert })}
+        onRuler={() => update({ ruler: !view.ruler }, true)}
         onCopyLink={() => copy("link", location.href)}
+        onCopyEmbed={() => copy("embed", embedCode())}
+        copied={copied}
         onExit={() => update({ sky: false }, true)}
       />
     ) : null;
 
+  // full screen replaces the page: nothing is drawn or fetched twice
+  if (skyEl) return skyEl;
+
   return (
     <div className="app">
-      {skyEl}
       <header className="top">
         <a className="brand" href={import.meta.env.BASE_URL} aria-label="SEDNA, start page">
           <picture>
@@ -692,29 +794,7 @@ export default function App() {
             )}
           </aside>
 
-          {view.mode === "follow" ? (
-            <FollowPanel body={view.target ?? "sedna"} onDistance={() => startMission(MISSIONS[2])} />
-          ) : view.mode === "focus" ? (
-            <FocusPanel
-              body={target?.kind === "distance" ? target : null}
-              seed={target?.kind === "distance" ? null : seed}
-              controls={targets.filter((t) => t.kind === "distance")}
-              onOpen={openTarget}
-              onProgress={onFocusProgress}
-              header={coach}
-            />
-          ) : view.mode === "film" ? (
-            <FilmPanel
-              ra={view.ra}
-              dec={view.dec}
-              fov={view.fov}
-              visit={view.fv}
-              startMjd={view.ft}
-              movers={movers.kind === "ready" ? movers.data.movers.filter((m) => m.visible) : []}
-              onVisit={(v) => update({ fv: v, ft: null }, true)}
-              onFocus={(s) => { setSeed(s); update({ mode: "focus", target: null }, true); }}
-            />
-          ) : (
+          {modePanelEl ?? (
           <section className="stage-wrap">
             {captionEl}
             {stageEl}
@@ -722,37 +802,7 @@ export default function App() {
               <span>{readout ?? "Point at the sky to read its position and value"}</span>
               <span>North up, east left · asinh, one stretch for all dates</span>
             </div>
-            {coach}
-            {view.ruler && rulerPair && (
-              <RulerPanel state={ruler} fromLabel={dateLabel(rulerPair.from.start)} toLabel={dateLabel(rulerPair.to.start)} onFocus={() => update({ mode: "film" }, true)} />
-            )}
-            {picked && (
-              <p className="verdict" role="status">
-                <strong>Known star.</strong> Gaia DR3 {picked.id}, G = {picked.g?.toFixed(1) ?? "?"}. Catalogue motion {(Math.hypot(picked.pmRa ?? 0, picked.pmDec ?? 0) / 1000).toFixed(2)}″ per year:
-                about {shiftPx(picked).toFixed(2)} pixel over the dates shown.
-              </p>
-            )}
-            {clickSky && !view.bp && (
-              <div className="focus-actions measure">
-                <button type="button" className="text ice" onClick={() => update({ bp: `${clickSky.ra.toFixed(5)},${clickSky.dec.toFixed(5)}` }, true)}>
-                  Measure brightness and spectrum {clickSky.star ? "of this star" : "here"}
-                </button>
-              </div>
-            )}
-            {target && target.kind !== "distance" && !view.bp && (
-              <div className="focus-actions measure">
-                <button type="button" className="text ice" onClick={() => update({ bp: target.id }, true)}>
-                  Measure {target.name}&rsquo;s brightness and spectrum
-                </button>
-              </div>
-            )}
-            {lens && (
-              <Suspense fallback={<p className="note-line" role="status">Opening the brightness lens…</p>}>
-                <BrightnessPanel ra={lens.ra} dec={lens.dec} target={lens.target} label={lens.label} onClose={() => update({ bp: null }, true)} />
-              </Suspense>
-            )}
-            <MoversNote state={movers} onShow={(m) => update({ mode: "film", fv: m.visit, ft: m.closestMjd }, true)} />
-            {target && <p className="note-line">{target.note}</p>}
+            {detailsEl}
           </section>
           )}
 

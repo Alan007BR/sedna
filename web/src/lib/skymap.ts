@@ -3,7 +3,7 @@
 // copies on each side, so it spans (2 * REACH + 1) * size; the window sits in the middle.
 // Code written with AI assistance (Claude); see AI_USAGE.md.
 
-export const REACH = 2;
+export const REACH = 3; // mirrored copies on each side: enough room to frame the window beside a drawer or above a phone sheet
 export const MAX_SCALE = 24; // screen px per SPHEREx px
 export const SHARP_FROM = 4; // below this the frames are smoothed, from it they are sharp pixels
 export const OPENING_SHARE = 0.86; // the window fills this share of the shorter viewport side
@@ -28,6 +28,15 @@ export function openingView(size: number, vp: Viewport): MapView {
   const s = Math.min(OPENING_SHARE * Math.min(vp.w, vp.h), vp.h - 2 * HUD_BAND) / size;
   const centre = (mapSpan(size) / 2) * s;
   return clampView({ s, tx: vp.w / 2 - centre, ty: vp.h / 2 - centre }, size, vp);
+}
+
+export type Area = { x: number; y: number; w: number; h: number };
+
+/** Like the opening view, but centred in a free part of the screen (beside the details drawer). */
+export function openingViewIn(size: number, vp: Viewport, area: Area, band = HUD_BAND): MapView {
+  const s = Math.max(1e-3, Math.min(OPENING_SHARE * Math.min(area.w, area.h), area.h - 2 * band)) / size;
+  const centre = (mapSpan(size) / 2) * s;
+  return clampView({ s, tx: area.x + area.w / 2 - centre, ty: area.y + area.h / 2 - centre }, size, vp);
 }
 
 /** Zoom by ``factor`` keeping the map point under (px, py) where it is. */

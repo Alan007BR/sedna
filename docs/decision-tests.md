@@ -167,20 +167,33 @@ The distance focus needs a starting point, and someone looking at a region does 
 
 | Rule | Why | Seen in |
 | --- | --- | --- |
-| S/N 2.5 or more in each half of the exposures | One bad stretch of exposures can make a peak | Epsilon Indi B's field, visit 1: peaks of 5.6–7.4 with one half at 0.6–2.2 |
+| S/N 3.5 or more in each half of the exposures that cover it (the limit of the next-visit check) | One bad stretch of exposures can make a peak | Epsilon Indi B's field, visit 1: peaks of 5.6–7.4 with one half at 0.6–3.0; 2.5 let the 7.4 one through |
 | With no shift, under 50 % of its S/N when followed | A star that changed between visits (variable, or moved by its proper motion) is as strong or stronger unshifted | Barnard's Star's field, visit 1: S/N 9.8 followed, 12.2 unshifted; a random field (185.517 −25.366): 37.5 against 22.7, which passed when the limit was 60 % |
 | A body must move at least 4 pixels during the exposures | Below that a slow body cannot be told from a changed star | The same random field first came out at 459 au, moving under 4 pixels, when the limit was 2 |
 
-Makemake passes them with room to spare (halves 12.9 and 30.9; 6.8 unshifted against 33.3 followed). The same rules are applied to the negated search, so the noise count is comparable. The farthest distance searched depends on the visit's span: 293 au for Makemake's four days.
+The halves are made from the exposures in which the candidate's track is inside the field. Splitting all exposures in time rejected Haumea in two visits (S/N 42.6 and 16.8): it walks out of the 6′ field during the visit, which left one half empty. The same rules are applied to the negated search, so the noise count is comparable. The farthest distance searched depends on the visit's span: 293 au for Makemake's four days.
+
+**Finding known bodies without being told where.** A 6′ field centred 1.5′ from each dwarf planet (JPL Horizons, middle of the window), in each of its visits; found means a candidate within 2 pixels of the body's position. V from JPL Horizons, seen from SPHEREx in June 2025.
+
+| Body | V | Visits searched | Found | S/N | Distance (au), JPL in brackets |
+| --- | --- | --- | --- | --- | --- |
+| Makemake | 17.1 | 3 | 3 | 31.8, 19.7, 39.6 | 48.9 (52.4), 56.0 (52.8), 48.9 (52.4) |
+| Haumea | 17.2 | 3 | 3 | 42.6, 16.8, 36.0 | 46.8 (49.4), 53.5 (49.9), 48.9 (49.4) |
+| Pluto | 14.5 | 2 (visit 1 has too few exposures) | 1 | 160.1 | 32.7 (35.5) |
+| Eris | 18.6 | 3 | 1 | 7.5 | 91.6 (95.5) |
+
+No other candidate and no noise peak came out in these 11 fields. The misses are Pluto's visit 2, where the circular-orbit model is 40 % off for its eccentric orbit (as in the distance focus), and Eris in two visits, at the edge of detection.
+
+**False alarms.**
 
 | Fields searched | Searches | Candidates | Noise peaks ≥ 5σ |
 | --- | --- | --- | --- |
 | Makemake's field, visit 1 | 1 | 1: Makemake, S/N 33.3, 48.9 au; IMCCE SkyBoT names it 0.6″ away | 0 |
 | Makemake's field, visits 2 and 3 (Makemake is degrees away by then) | 2 | 0 | 0 |
 | The five challenge targets, visits 1 and 2 | 10 | 0 | 0 |
-| Random fields (seeds 5 and 11; two had too few exposures) | 30 | 0 | 1, at S/N 6.5 |
+| Random fields (seeds 5 and 11; two had too few exposures) | 30 | 0 | 0 |
 
-- **Timing:** 3–14 seconds per search on a laptop, most of it reading about 40 exposures of the visit and up to 160 of other visits.
+- **Timing:** 3–14 seconds per search on a laptop and 7–11 seconds on the published service, most of it reading about 40 exposures of the visit and up to 160 of other visits.
 - **Tests:** `service/tests/test_search.py` (a synthetic body at 50 au found within 15 % of its distance; a fixed source rejected; noise alone gives nothing).
 - **Script:** `probes/p19_search_checks.py` → `probes/p19_search_checks.json`
 

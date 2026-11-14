@@ -39,13 +39,14 @@ STAR_SIGMA = 4.0  # static sky brighter than this (in exposure noise) is a star:
 MIN_MOTION_PX = 4.0  # a body moving less than this in the window cannot be told from a star that changed (2 px let one through in 16 random fields)
 MIN_COVER = 0.6  # share of the exposures that must cover a pixel at a trial distance
 CANDIDATE_SNR = 5.0
-HALF_SNR = 2.5  # a candidate must also show in each half of the exposures (a body at S/N 5 gives about 3.5 per half)
+HALF_SNR = 3.5  # a candidate must also show in each half of the exposures that cover it, as in the next-visit check (2.5 let one through: probes/p19)
 MAX_TEMPLATES = 40  # static-sky exposures per detector, spread over the other visits
 MAX_CANDIDATES = 6
 EDGE = 3
 MIN_EXPOSURES = 8
 FIXED_SHARE = 0.5  # with no shift, a moving body must stay under this share of its S/N when followed (Makemake: 0.2)
-RULES = 2  # bump when a rule above changes, so cached answers are not reused
+MIN_HALF = 4  # exposures in each half
+RULES = 5  # bump when a rule above changes, so cached answers are not reused
 DEBUG = False
 
 
@@ -167,11 +168,19 @@ def _near(snr: np.ndarray, x: int, y: int, radius: int = 1) -> float:
 
 
 def _halves(usable, dx, dy, d: int, x: int, y: int, sign: float) -> list[float]:
-    """S/N near (x, y) in the stacks of the first and the second half of the exposures, at trial distance d."""
+    """S/N near (x, y) in the stacks of the first and the second half of the exposures that cover it, at trial distance d.
+
+    Only the exposures where the candidate's track is inside the field (and off the star mask) are split: a body
+    near the edge leaves the field during the visit, and splitting all exposures would leave one half empty.
+    """
     size = usable[0][1].shape[0]
     jj, ii = np.mgrid[0:size, 0:size].astype(float)
-    k = len(usable) // 2
-    return [_near(_snr([sign * _shifted(usable[t][1], dx[d, t], dy[d, t], jj, ii) for t in part]), x, y) for part in (range(0, k), range(k, len(usable)))]
+    planes = [sign * _shifted(r, dx[d, t], dy[d, t], jj, ii) for t, (_, r) in enumerate(usable)]
+    covering = [p for p in planes if np.isfinite(p[y, x])]
+    if len(covering) < 2 * MIN_HALF:
+        return [float("-inf"), float("-inf")]
+    k = len(covering) // 2
+    return [_near(_snr(covering[:k]), x, y), _near(_snr(covering[k:]), x, y)]
 
 
 def _fixed_along(fixed: np.ndarray, dx, dy, d: int, x: int, y: int) -> float:

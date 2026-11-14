@@ -16,9 +16,167 @@
    "searches": 30,
    "skipped": 2,
    "candidates": 0,
-   "noise_peaks": 1
+   "noise_peaks": 0
+  },
+  "bodies": {
+   "searches": 11,
+   "skipped": 1,
+   "found": 8,
+   "other_candidates": 0
   }
  },
+ "bodies": [
+  {
+   "body": "Makemake",
+   "visit": 1,
+   "ra": 199.95505,
+   "dec": 21.46955,
+   "exposures": 39,
+   "jpl_distance_au": 52.4,
+   "found": true,
+   "snr": 31.8,
+   "distance_au": 48.9,
+   "other_candidates": 0,
+   "noise_peaks": []
+  },
+  {
+   "body": "Makemake",
+   "visit": 2,
+   "ra": 202.33462,
+   "dec": 20.13912,
+   "exposures": 47,
+   "jpl_distance_au": 52.8,
+   "found": true,
+   "snr": 19.7,
+   "distance_au": 56.0,
+   "other_candidates": 0,
+   "noise_peaks": []
+  },
+  {
+   "body": "Makemake",
+   "visit": 3,
+   "ra": 200.70544,
+   "dec": 20.96411,
+   "exposures": 53,
+   "jpl_distance_au": 52.4,
+   "found": true,
+   "snr": 39.6,
+   "distance_au": 48.9,
+   "other_candidates": 0,
+   "noise_peaks": []
+  },
+  {
+   "body": "Haumea",
+   "visit": 1,
+   "ra": 218.60258,
+   "dec": 14.95366,
+   "exposures": 53,
+   "jpl_distance_au": 49.4,
+   "found": true,
+   "snr": 42.6,
+   "distance_au": 46.8,
+   "other_candidates": 0,
+   "noise_peaks": []
+  },
+  {
+   "body": "Haumea",
+   "visit": 2,
+   "ra": 221.10655,
+   "dec": 13.73742,
+   "exposures": 36,
+   "jpl_distance_au": 49.9,
+   "found": true,
+   "snr": 16.8,
+   "distance_au": 53.5,
+   "other_candidates": 0,
+   "noise_peaks": []
+  },
+  {
+   "body": "Haumea",
+   "visit": 3,
+   "ra": 219.46867,
+   "dec": 14.59777,
+   "exposures": 39,
+   "jpl_distance_au": 49.4,
+   "found": true,
+   "snr": 36.0,
+   "distance_au": 48.9,
+   "other_candidates": 0,
+   "noise_peaks": []
+  },
+  {
+   "body": "Pluto",
+   "visit": 1,
+   "ra": 306.65948,
+   "dec": -22.81919,
+   "skipped": "too few usable exposures in this visit"
+  },
+  {
+   "body": "Pluto",
+   "visit": 2,
+   "ra": 304.16207,
+   "dec": -23.62932,
+   "exposures": 51,
+   "jpl_distance_au": 35.0,
+   "found": false,
+   "snr": null,
+   "distance_au": null,
+   "other_candidates": 0,
+   "noise_peaks": []
+  },
+  {
+   "body": "Pluto",
+   "visit": 3,
+   "ra": 308.55132,
+   "dec": -22.90392,
+   "exposures": 53,
+   "jpl_distance_au": 35.5,
+   "found": true,
+   "snr": 160.1,
+   "distance_au": 32.7,
+   "other_candidates": 0,
+   "noise_peaks": []
+  },
+  {
+   "body": "Eris",
+   "visit": 1,
+   "ra": 27.39991,
+   "dec": -0.13191,
+   "exposures": 34,
+   "jpl_distance_au": 95.7,
+   "found": false,
+   "snr": null,
+   "distance_au": null,
+   "other_candidates": 0,
+   "noise_peaks": []
+  },
+  {
+   "body": "Eris",
+   "visit": 2,
+   "ra": 26.3467,
+   "dec": -0.44281,
+   "exposures": 30,
+   "jpl_distance_au": 95.5,
+   "found": true,
+   "snr": 7.5,
+   "distance_au": 91.6,
+   "other_candidates": 0,
+   "noise_peaks": []
+  },
+  {
+   "body": "Eris",
+   "visit": 3,
+   "ra": 27.51971,
+   "dec": 0.13916,
+   "exposures": 43,
+   "jpl_distance_au": 95.6,
+   "found": false,
+   "snr": null,
+   "distance_au": null,
+   "other_candidates": 0,
+   "noise_peaks": []
+  }
+ ],
  "searches": [
   {
    "field": "Makemake's field",
@@ -35,13 +193,13 @@
      "x": 29,
      "y": 29,
      "halves": [
-      12.9,
-      30.9
+      14.6,
+      32.6
      ]
     }
    ],
    "noise_peaks": [],
-   "seconds": 6.9
+   "seconds": 7.5
   },
   {
    "field": "Makemake's field",
@@ -53,7 +211,7 @@
    "farthest_au": 401.0,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 6.1
+   "seconds": 7.1
   },
   {
    "field": "Makemake's field",
@@ -77,7 +235,7 @@
    "farthest_au": 366.7,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 6.1
+   "seconds": 7.7
   },
   {
    "field": "Barnard's Star",
@@ -89,7 +247,7 @@
    "farthest_au": 53.5,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 4.8
+   "seconds": 4.6
   },
   {
    "field": "WISE 0855-0714",
@@ -101,7 +259,7 @@
    "farthest_au": 46.8,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 4.3
+   "seconds": 4.7
   },
   {
    "field": "WISE 0855-0714",
@@ -113,7 +271,7 @@
    "farthest_au": 187.4,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 3.9
+   "seconds": 4.6
   },
   {
    "field": "Epsilon Indi B",
@@ -125,7 +283,7 @@
    "farthest_au": 501.6,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 5.8
+   "seconds": 5.6
   },
   {
    "field": "Epsilon Indi B",
@@ -137,7 +295,7 @@
    "farthest_au": 501.6,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 5.0
+   "seconds": 7.4
   },
   {
    "field": "RW Aurigae",
@@ -149,7 +307,7 @@
    "farthest_au": 100.1,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 5.2
+   "seconds": 5.0
   },
   {
    "field": "RW Aurigae",
@@ -161,7 +319,7 @@
    "farthest_au": 91.6,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 6.8
+   "seconds": 7.9
   },
   {
    "field": "R Draconis",
@@ -173,7 +331,7 @@
    "farthest_au": 600.0,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 5.8
+   "seconds": 8.0
   },
   {
    "field": "R Draconis",
@@ -185,7 +343,7 @@
    "farthest_au": 600.0,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 14.2
+   "seconds": 11.4
   },
   {
    "field": "random 5",
@@ -197,7 +355,7 @@
    "farthest_au": 366.7,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 7.8
+   "seconds": 6.8
   },
   {
    "field": "random 5",
@@ -209,7 +367,7 @@
    "farthest_au": 280.3,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 4.5
+   "seconds": 6.0
   },
   {
    "field": "random 5",
@@ -221,7 +379,7 @@
    "farthest_au": 234.4,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 7.2
+   "seconds": 6.5
   },
   {
    "field": "random 5",
@@ -233,7 +391,7 @@
    "farthest_au": 524.6,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 5.3
+   "seconds": 6.8
   },
   {
    "field": "random 5",
@@ -245,7 +403,7 @@
    "farthest_au": 383.5,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 5.5
+   "seconds": 6.4
   },
   {
    "field": "random 5",
@@ -257,7 +415,7 @@
    "farthest_au": 204.9,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 5.2
+   "seconds": 7.8
   },
   {
    "field": "random 5",
@@ -269,7 +427,7 @@
    "farthest_au": 600.0,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 7.5
+   "seconds": 5.4
   },
   {
    "field": "random 5",
@@ -281,7 +439,7 @@
    "farthest_au": 293.2,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 5.8
+   "seconds": 5.9
   },
   {
    "field": "random 5",
@@ -293,7 +451,7 @@
    "farthest_au": 26.1,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 4.0
+   "seconds": 4.2
   },
   {
    "field": "random 5",
@@ -305,7 +463,7 @@
    "farthest_au": 458.7,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 6.7
+   "seconds": 6.8
   },
   {
    "field": "random 5",
@@ -317,7 +475,7 @@
    "farthest_au": 196.0,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 5.7
+   "seconds": 5.6
   },
   {
    "field": "random 5",
@@ -326,7 +484,7 @@
    "dec": -60.64173,
    "visit": 1,
    "skipped": "too few usable exposures in this visit",
-   "seconds": 4.0
+   "seconds": 4.6
   },
   {
    "field": "random 5",
@@ -338,7 +496,7 @@
    "farthest_au": 524.6,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 7.0
+   "seconds": 6.0
   },
   {
    "field": "random 5",
@@ -350,7 +508,7 @@
    "farthest_au": 306.6,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 7.1
+   "seconds": 7.3
   },
   {
    "field": "random 5",
@@ -362,7 +520,7 @@
    "farthest_au": 600.0,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 7.8
+   "seconds": 8.3
   },
   {
    "field": "random 5",
@@ -374,7 +532,7 @@
    "farthest_au": 600.0,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 6.8
+   "seconds": 9.5
   },
   {
    "field": "random 11",
@@ -386,7 +544,7 @@
    "farthest_au": 224.1,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 8.9
+   "seconds": 8.7
   },
   {
    "field": "random 11",
@@ -397,10 +555,8 @@
    "exposures": 48,
    "farthest_au": 600.0,
    "candidates": [],
-   "noise_peaks": [
-    6.5
-   ],
-   "seconds": 8.2
+   "noise_peaks": [],
+   "seconds": 8.0
   },
   {
    "field": "random 11",
@@ -412,7 +568,7 @@
    "farthest_au": 419.4,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 7.5
+   "seconds": 7.1
   },
   {
    "field": "random 11",
@@ -424,7 +580,7 @@
    "farthest_au": 600.0,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 6.3
+   "seconds": 6.2
   },
   {
    "field": "random 11",
@@ -436,7 +592,7 @@
    "farthest_au": 204.9,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 6.4
+   "seconds": 7.6
   },
   {
    "field": "random 11",
@@ -448,7 +604,7 @@
    "farthest_au": 80.1,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 5.5
+   "seconds": 4.6
   },
   {
    "field": "random 11",
@@ -460,7 +616,7 @@
    "farthest_au": 125.2,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 6.5
+   "seconds": 5.9
   },
   {
    "field": "random 11",
@@ -472,7 +628,7 @@
    "farthest_au": 234.4,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 8.2
+   "seconds": 6.7
   },
   {
    "field": "random 11",
@@ -484,7 +640,7 @@
    "farthest_au": 401.0,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 8.4
+   "seconds": 7.1
   },
   {
    "field": "random 11",
@@ -496,7 +652,7 @@
    "farthest_au": 401.0,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 7.2
+   "seconds": 7.1
   },
   {
    "field": "random 11",
@@ -508,7 +664,7 @@
    "farthest_au": 438.6,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 7.7
+   "seconds": 6.8
   },
   {
    "field": "random 11",
@@ -520,7 +676,7 @@
    "farthest_au": 256.3,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 7.1
+   "seconds": 5.5
   },
   {
    "field": "random 11",
@@ -532,7 +688,7 @@
    "farthest_au": 156.7,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 6.5
+   "seconds": 5.2
   },
   {
    "field": "random 11",
@@ -544,7 +700,7 @@
    "farthest_au": 143.2,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 6.3
+   "seconds": 9.5
   },
   {
    "field": "random 11",
@@ -553,7 +709,7 @@
    "dec": -47.94316,
    "visit": 1,
    "skipped": "too few usable exposures in this visit",
-   "seconds": 3.8
+   "seconds": 4.9
   },
   {
    "field": "random 11",
@@ -565,7 +721,7 @@
    "farthest_au": 320.6,
    "candidates": [],
    "noise_peaks": [],
-   "seconds": 5.4
+   "seconds": 5.3
   }
  ]
 }

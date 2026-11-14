@@ -695,10 +695,13 @@ def search(ra: float = Query(..., ge=0, lt=360), dec: float = Query(..., ge=-90,
         "method": (
             f"Every single exposure of the densest {WINDOW_DAYS:.0f} days of this visit (detectors {SEARCH_DETECTORS[0]}-{SEARCH_DETECTORS[-1]}), with the stars removed by a static sky "
             f"made from {res.templates} exposures of other visits, is shifted as a whole for each trial distance and stacked. Pixels near stars brighter than {STAR_SIGMA:.0f} sigma are masked. "
-            f"A candidate must reach S/N {CANDIDATE_SNR:.0f}, show in each half of the exposures (S/N {HALF_SNR}), move at least {MIN_MOTION_PX:.0f} pixels, and fade to under "
+            f"A candidate must reach S/N {CANDIDATE_SNR:.0f}, show in each half of the exposures that cover it (S/N {HALF_SNR}), move at least {MIN_MOTION_PX:.0f} pixels, and fade to under "
             f"{FIXED_SHARE:.0%} of its S/N with no shift, which rules out stars that changed. The same search on the negated exposures counts what noise alone gives here."
         ),
-        "limit": "Finds bodies about as bright as the dwarf planet Makemake (V about 17) in one visit. Fainter ones, such as 90377 Sedna (V = 20.8), stay at the level of noise unless their orbit is known.",
+        "limit": (
+            "Tested without being told where to look, it found the dwarf planets Makemake and Haumea (V about 17) in each of their visits, "
+            "and Eris (V = 18.6) in one visit of three. Fainter bodies, such as 90377 Sedna (V = 20.8), stay at the level of noise unless their orbit is known."
+        ),
         "seconds": round(time.time() - t0, 2),
         "source": "archive",
     }

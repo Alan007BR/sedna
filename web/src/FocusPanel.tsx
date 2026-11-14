@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ApiError, fetchFocus, fetchFocusAt, type Focus, type Target } from "./lib/api";
 import { renderFrame } from "./lib/render";
+import NextVisitPanel from "./NextVisitPanel";
 
 export type FocusStep = "watch" | "focus" | "check";
 type Step = FocusStep;
@@ -306,6 +307,12 @@ export default function FocusPanel({ body, seed, controls, onOpen, onProgress, h
               </div>
             )}
           </div>
+          {data.confidence !== "none" && (
+            <NextVisitPanel
+              name={body?.name ?? "the point"}
+              query={body ? { body: body.id, visit: data.visit } : { ra: data.seed.ra, dec: data.seed.dec, mjd: data.seed.mjd, distance: data.bestDistanceAu }}
+            />
+          )}
         </div>
       )}
     </section>

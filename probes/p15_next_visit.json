@@ -1,0 +1,147 @@
+[
+ {
+  "body": "makemake",
+  "visit": 1,
+  "focus_au": 48.9,
+  "true_au": 52.4,
+  "status": "found",
+  "days_ahead": 207.5,
+  "jump_deg": 2.836,
+  "prediction_error_arcmin": 15.96,
+  "found_snr": 9.1,
+  "found_error_arcsec": 2.5,
+  "exposures": 17
+ },
+ {
+  "body": "makemake",
+  "visit": 2,
+  "focus_au": 56.0,
+  "true_au": 52.8,
+  "status": "found",
+  "days_ahead": 161.4,
+  "jump_deg": 1.601,
+  "prediction_error_arcmin": 8.3,
+  "found_snr": 9.9,
+  "found_error_arcsec": 2.8,
+  "exposures": 20
+ },
+ {
+  "body": "makemake",
+  "visit": 3,
+  "focus_au": 51.2,
+  "true_au": 52.4,
+  "status": "not_observed",
+  "days_ahead": null,
+  "jump_deg": null,
+  "prediction_error_arcmin": null,
+  "found_snr": null,
+  "found_error_arcsec": null,
+  "exposures": null
+ },
+ {
+  "body": "haumea",
+  "visit": 1,
+  "focus_au": 48.9,
+  "true_au": 49.4,
+  "status": "not_found",
+  "days_ahead": 208.1,
+  "jump_deg": 2.787,
+  "prediction_error_arcmin": 4.97,
+  "found_snr": null,
+  "found_error_arcsec": null,
+  "exposures": 16
+ },
+ {
+  "body": "haumea",
+  "visit": 2,
+  "focus_au": 600.0,
+  "true_au": 49.9,
+  "status": "no focus"
+ },
+ {
+  "body": "haumea",
+  "visit": 3,
+  "focus_au": 48.9,
+  "true_au": 49.4,
+  "status": "not_observed",
+  "days_ahead": null,
+  "jump_deg": null,
+  "prediction_error_arcmin": null,
+  "found_snr": null,
+  "found_error_arcsec": null,
+  "exposures": null
+ },
+ {
+  "body": "pluto",
+  "visit": 1,
+  "focus_au": 600.0,
+  "true_au": 35.2,
+  "status": "no focus"
+ },
+ {
+  "body": "pluto",
+  "visit": 2,
+  "focus_au": 48.9,
+  "true_au": 35.0,
+  "status": "not_found",
+  "days_ahead": 206.0,
+  "jump_deg": 2.846,
+  "prediction_error_arcmin": 76.14,
+  "found_snr": null,
+  "found_error_arcsec": null,
+  "exposures": 20
+ },
+ {
+  "body": "pluto",
+  "visit": 3,
+  "focus_au": 34.2,
+  "true_au": 35.5,
+  "status": "not_found",
+  "days_ahead": 157.5,
+  "jump_deg": 2.413,
+  "prediction_error_arcmin": 13.44,
+  "found_snr": null,
+  "found_error_arcsec": null,
+  "exposures": 9
+ },
+ {
+  "body": "pluto",
+  "visit": 4,
+  "focus_au": 40.9,
+  "true_au": 35.2,
+  "status": "not_observed",
+  "days_ahead": null,
+  "jump_deg": null,
+  "prediction_error_arcmin": null,
+  "found_snr": null,
+  "found_error_arcsec": null,
+  "exposures": null
+ },
+ {
+  "body": "eris",
+  "visit": 1,
+  "focus_au": 143.2,
+  "true_au": 95.5,
+  "status": "no focus"
+ },
+ {
+  "body": "eris",
+  "visit": 2,
+  "focus_au": 73.2,
+  "true_au": 95.4,
+  "status": "no focus"
+ },
+ {
+  "body": "eris",
+  "visit": 3,
+  "focus_au": 131.0,
+  "true_au": 95.6,
+  "status": "not_observed",
+  "days_ahead": null,
+  "jump_deg": null,
+  "prediction_error_arcmin": null,
+  "found_snr": null,
+  "found_error_arcsec": null,
+  "exposures": null
+ }
+]

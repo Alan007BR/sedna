@@ -80,6 +80,36 @@ Run on every visit of four known bodies with detectors 1–4, a six-day window, 
 - **How the product says so:** every result carries a verdict (clear, uncertain, no focus) with its reason, computed from the peak sharpness, the sharpness with no shift, the width of the peak, and the number and span of exposures.
 - **Script:** `probes/p10_focus_bodies.py`; code in `service/sedna/science/focus.py` and `service/sedna/focus_service.py`
 
+## The parallax ruler
+
+For any pair of visits, the ruler shows where a body seen at one point would be at the second date, at 50, 100, 300 and 500 au and at 2 pc, with the same model as the distance focus (`/api/parallax-ruler`, `science/parallax.py`).
+
+- On Makemake's field, between 13 June and 30 December 2025: 2.8° at 50 au, 1.3° at 100 au, 25′ at 300 au and 15′ at 500 au, that is 28, 13, 4.1 and 2.4 fields of view away. A star at 2 pc shifts by 1.0″. Only bodies beyond about 2,100 au stay inside a 6′ field.
+- **Why it matters:** a blink of fixed coordinates cannot follow a world in the outer Solar System. The ruler makes that visible on any field and points to the distance focus.
+- **Tests:** `service/tests/test_ruler_next_visit.py` (no shift for the same date, shifts falling with distance, a star at 2 pc under 1″, larger fields holding nearer bodies).
+
+## Next-visit check
+
+After the distance focus, SEDNA predicts where the body will be at SPHEREx's next visit and looks for it there (`service/sedna/next_visit_service.py`, `/api/next-visit`, `/api/next-visit-at`).
+
+- **The prediction is a region.** Against JPL Horizons, the model's position 5–7 months later is off by 5–16′ when the jump is 1.6–2.8°. The region covers distances within ±10 % of the focus result and 36′ around them.
+- **The search.** Up to 20 exposures of the next visit are stacked twice: fixed on the sky and following the body at the focus distance. A detection must reach S/N 7 in the difference (followed minus fixed, smoothed 3 × 3), lie within 8′ of the predicted arc, avoid the trails of bright stars, have no negative lobe beside it (a star shifted by a pixel leaves one), and appear in both halves of the exposures.
+- **How the rules were set.** The first version took the brightest peak and found star residuals 7–25′ from Makemake. Each rule above removed one kind of false detection seen in the data. The negative-lobe limit (1.0) separates Makemake (0.2 and 0.7) from every false candidate above S/N 7 (1.3 to 65).
+
+| Body | Visit | Focus (au) | JPL (au) | Days ahead | Jump | Prediction off by | Result |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Makemake | 1 | 48.9 | 52.4 | 208 | 2.8° | 16.0′ | **Found**, S/N 9, 2.5″ from JPL |
+| Makemake | 2 | 56.0 | 52.8 | 161 | 1.6° | 8.3′ | **Found**, S/N 10, 2.8″ from JPL |
+| Haumea | 1 | 48.9 | 49.4 | 208 | 2.8° | 5.0′ | Not found |
+| Pluto | 2 | 48.9 (uncertain) | 35.0 | 206 | 2.8° | 76′ | Not found |
+| Pluto | 3 | 34.2 | 35.5 | 158 | 2.4° | 13.4′ | Not found (9 exposures) |
+| Makemake 3, Haumea 3, Pluto 4, Eris 3 | | | | | | | Not observed again in the indexed data |
+
+- **No false detections** in the five searches.
+- **Why the misses:** Pluto's visit-2 focus was 40 % off, which put the prediction 76′ away, outside the region. Pluto's visit 3 had only 9 exposures. Haumea sits inside the region but does not stand out when followed (S/N 1.6 at its true position); the model's circular, in-ecliptic orbit gets its motion wrong (Haumea's orbit is inclined 28°), which blurs it within the window. That is a limit of the one-parameter model, stated on screen.
+- **For a point the person picked:** the same check on the point picked in Makemake's field found it again, and IMCCE SkyBoT named it Makemake, 2.6″ away.
+- **Script:** `probes/p15_next_visit.py` → `probes/p15_next_visit.json`
+
 ## Test 3 — cutouts straight from the bucket
 
 - IMAGE pixels are uncompressed big-endian float32 starting at byte 28,800 (pipeline 7.0.5), so a strip of rows is one range request.

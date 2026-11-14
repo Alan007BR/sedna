@@ -6,10 +6,12 @@ import FilmPanel, { type Seed } from "./FilmPanel";
 import FocusPanel, { type FocusStep } from "./FocusPanel";
 import MissionCoach from "./MissionCoach";
 import MoversNote, { type MoversState } from "./MoversNote";
+import RulerPanel, { RulerMarks, type RulerState } from "./RulerPanel";
 import { ApiError, fetchFocus, fetchGaia, fetchHealth, fetchStack, fetchTargets, type GaiaSource, type Stack, type Target } from "./lib/api";
 import { formatSexagesimal, gridToSky, mjdToYear, parseTarget, skyToGrid } from "./lib/coords";
 import { advance, missionById, MISSIONS, type Mission, type MissionContext } from "./lib/missions";
 import { fetchMovers } from "./lib/movers";
+import { fetchRuler } from "./lib/prediction";
 import { differenceLimit, mean, renderDifference, renderFrame, sharedLimits, subtract } from "./lib/render";
 
 type Mode = "blink" | "diff" | "sum" | "film" | "focus";
@@ -21,9 +23,9 @@ const MODES: { id: Mode; label: string }[] = [
   { id: "focus", label: "Distance focus" },
 ];
 // fv: single-exposure visit (0-based; 1-based in the URL); ft: open the single exposures at this MJD
-// bp: brightness lens on a built-in target id, or on a point "ra,dec"; mission: guided mission id
-type View = { ra: number; dec: number; fov: number; det: number; mode: Mode; target: string | null; gaia: boolean; invert: boolean; fps: number; fv: number; ft: number | null; bp: string | null; mission: string | null };
-const VIEW_DEFAULTS = { fov: 6, det: 2, mode: "blink" as Mode, gaia: true, invert: false, fps: 2, fv: 0, ft: null, bp: null, mission: null };
+// bp: brightness lens on a built-in target id, or on a point "ra,dec"; mission: guided mission id; ruler: parallax ruler on
+type View = { ra: number; dec: number; fov: number; det: number; mode: Mode; target: string | null; gaia: boolean; invert: boolean; fps: number; fv: number; ft: number | null; bp: string | null; mission: string | null; ruler: boolean };
+const VIEW_DEFAULTS = { fov: 6, det: 2, mode: "blink" as Mode, gaia: true, invert: false, fps: 2, fv: 0, ft: null, bp: null, mission: null, ruler: false };
 
 // from the pipeline's wavelength maps (service/sedna/archive/wavelength.py), rounded outward
 const DETECTORS = [
@@ -46,7 +48,7 @@ function readView(): View | null {
   const mode = MODES.some((m) => m.id === p.get("mode")) ? (p.get("mode") as Mode) : "blink";
   const fv = Math.max(0, Math.min(20, Math.round(Number(p.get("visit")) || 1) - 1));
   const ft = p.has("t") && Number.isFinite(Number(p.get("t"))) ? Number(p.get("t")) : null;
-  return { ra, dec, fov, det, mode, target: p.get("target"), gaia: p.get("gaia") !== "0", invert: p.get("invert") === "1", fps: Number(p.get("speed")) || 2, fv, ft, bp: p.get("bright"), mission: missionById(p.get("mission"))?.id ?? null };
+  return { ra, dec, fov, det, mode, target: p.get("target"), gaia: p.get("gaia") !== "0", invert: p.get("invert") === "1", fps: Number(p.get("speed")) || 2, fv, ft, bp: p.get("bright"), mission: missionById(p.get("mission"))?.id ?? null, ruler: p.get("ruler") === "1" };
 }
 
 function writeView(v: View, push: boolean) {
@@ -64,6 +66,7 @@ function writeView(v: View, push: boolean) {
   if (v.mode === "film" && v.ft !== null) p.set("t", v.ft.toFixed(5));
   if (v.bp) p.set("bright", v.bp);
   if (v.mission) p.set("mission", v.mission);
+  if (v.ruler) p.set("ruler", "1");
   const url = `${location.pathname}?${p}`;
   if (push) history.pushState(null, "", url);
   else history.replaceState(null, "", url);
@@ -88,6 +91,7 @@ export default function App() {
   const [movers, setMovers] = useState<MoversState>({ kind: "loading" });
   const [clickSky, setClickSky] = useState<{ ra: number; dec: number; star: boolean } | null>(null);
   const [missionStep, setMissionStep] = useState(0);
+  const [ruler, setRuler] = useState<RulerState>({ kind: "loading" });
   // visits shown in Blink, tied to one loaded stack and detector so a new target never inherits them
   const [stackGen, setStackGen] = useState(0);
   const [seen, setSeen] = useState<{ key: string; visits: Set<number> }>({ key: "", visits: new Set() });
@@ -336,6 +340,28 @@ export default function App() {
     <MissionCoach mission={mission} step={missionStep} onAction={(patch) => update(patch, true)} onNext={startMission} onExit={() => update({ mission: null }, true)} />
   ) : null;
 
+  // parallax ruler: from the visit on screen to the next one (Blink), or first to last (Difference, Sum)
+  const rulerPair = useMemo(() => {
+    if (!stack || frames.length < 2 || !view) return null;
+    const i = Math.min(epoch, frames.length - 1);
+    const [a, b] = view.mode === "blink" ? (i < frames.length - 1 ? [i, i + 1] : [i - 1, i]) : [0, frames.length - 1];
+    const va = stack.visits.find((v) => v.index === frames[a].visit);
+    const vb = stack.visits.find((v) => v.index === frames[b].visit);
+    return va && vb ? { from: va, to: vb } : null;
+  }, [stack, frames, epoch, view]);
+  const rulerAnchor = clickSky ?? (view ? { ra: view.ra, dec: view.dec } : null);
+  const rulerKey = view?.ruler && rulerPair && rulerAnchor ? `${rulerAnchor.ra.toFixed(5)}|${rulerAnchor.dec.toFixed(5)}|${rulerPair.from.midMjd}|${rulerPair.to.midMjd}|${view.fov}` : "";
+  useEffect(() => {
+    if (!rulerKey || !rulerPair || !rulerAnchor || !view) return;
+    const ctrl = new AbortController();
+    setRuler({ kind: "loading" });
+    fetchRuler(rulerAnchor.ra, rulerAnchor.dec, rulerPair.from.midMjd, rulerPair.to.midMjd, view.fov, ctrl.signal)
+      .then((data) => setRuler({ kind: "ready", data }))
+      .catch((err) => { if (err.name !== "AbortError") setRuler({ kind: "error", message: "The parallax ruler could not be computed." }); });
+    return () => ctrl.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rulerKey]);
+
   const lens = useMemo(() => {
     if (!view?.bp) return null;
     const t = targets.find((x) => x.id === view.bp);
@@ -496,6 +522,9 @@ export default function App() {
                   {gaiaMarks.map((m) => (
                     <circle key={m.s.id} cx={m.x} cy={m.y} r={1.5} fill="none" stroke={picked?.id === m.s.id ? "var(--fg)" : "var(--ice)"} strokeWidth={shiftPx(m.s) > 0.3 ? 0.2 : 0.1} opacity={shiftPx(m.s) > 0.3 ? 0.95 : 0.55} />
                   ))}
+                  {view.ruler && ruler.kind === "ready" && rulerAnchor && (
+                    <RulerMarks ruler={ruler.data} anchor={toSvg(rulerAnchor.ra, rulerAnchor.dec)} size={size} scale={scale} />
+                  )}
                   {lensMark && (
                     <g stroke="var(--ice)" strokeLinecap="round" strokeWidth={0.2}>
                       {[[-3.2, 0, -1.8, 0], [1.8, 0, 3.2, 0], [0, -3.2, 0, -1.8], [0, 1.8, 0, 3.2]].map(([a, b, c, d], i) => (
@@ -519,6 +548,9 @@ export default function App() {
               <span>North up, east left · asinh, one stretch for all dates</span>
             </div>
             {coach}
+            {view.ruler && rulerPair && (
+              <RulerPanel state={ruler} fromLabel={dateLabel(rulerPair.from.start)} toLabel={dateLabel(rulerPair.to.start)} onFocus={() => update({ mode: "film" }, true)} />
+            )}
             {picked && (
               <p className="verdict" role="status">
                 <strong>Known star.</strong> Gaia DR3 {picked.id}, G = {picked.g?.toFixed(1) ?? "?"}. Catalogue motion {(Math.hypot(picked.pmRa ?? 0, picked.pmDec ?? 0) / 1000).toFixed(2)}″ per year:
@@ -563,6 +595,9 @@ export default function App() {
               </button>
               <button type="button" className="opt" aria-pressed={view.invert} onClick={() => update({ invert: !view.invert })}>
                 <span className="dot" />Invert
+              </button>
+              <button type="button" className="opt" aria-pressed={view.ruler} onClick={() => update({ ruler: !view.ruler }, true)} title="How far a body here would move between two visits">
+                <span className="dot" />Parallax ruler
               </button>
               <a className="opt link" href={`http://byw.tools/wiseview#ra=${view.ra.toFixed(5)}&dec=${view.dec.toFixed(5)}&size=${Math.round(view.fov * 60)}&band=2`} target="_blank" rel="noopener">
                 Same sky in WiseView ↗<span className="sr"> (opens in new tab)</span>

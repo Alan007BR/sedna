@@ -66,6 +66,32 @@ def predict_track(ra0, dec0, mjd0, distance_au, mjd, earth=None, earth0=None, or
     return ra, dec
 
 
+PARSEC_AU = 206264.806
+RULER_AU = (50.0, 100.0, 300.0, 500.0, 2 * PARSEC_AU)
+
+
+def ruler(ra: float, dec: float, mjd_a: float, mjd_b: float, distances_au=RULER_AU) -> tuple[np.ndarray, np.ndarray]:
+    """Where a body seen at (ra, dec) on date A would be on date B, for each trial distance."""
+    ras, decs = predict_track(ra, dec, mjd_a, np.asarray(distances_au, dtype=float), np.array([mjd_b]))
+    return ras[:, 0], decs[:, 0]
+
+
+def stays_in_field_beyond(ra: float, dec: float, mjd_a: float, mjd_b: float, half_field_arcsec: float) -> float | None:
+    """Smallest distance beyond which a body seen at (ra, dec) on date A is still inside the square field on date B."""
+    from .movers import tangent_offsets_arcsec
+
+    d = np.geomspace(10.0, 1e7, 700)
+    ras, decs = ruler(ra, dec, mjd_a, mjd_b, d)
+    east, north = tangent_offsets_arcsec(ras, decs, ra, dec)
+    inside = (np.abs(east) <= half_field_arcsec) & (np.abs(north) <= half_field_arcsec)
+    if not inside[-1]:
+        return None
+    k = len(d) - 1
+    while k > 0 and inside[k - 1]:
+        k -= 1
+    return float(d[k])
+
+
 def parallax_swing_arcsec(distance_au: float) -> float:
     """Largest shift between two views taken from opposite sides of the Earth's orbit."""
     return 2 * 206264.806 / distance_au

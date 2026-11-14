@@ -1,0 +1,97 @@
+{
+"schemaVersion": 1,
+"release": "SPHEREx DR1 + QR3 (pipeline R7), read from the public AWS bucket",
+"status": "not_found",
+"body": "haumea",
+"name": "Haumea",
+"seed": {
+"ra": 218.5934,
+"dec": 14.97313,
+"mjd": 60850.557272486,
+"date": "2025-06-24 13:22Z"
+},
+"distanceAu": 48.9,
+"spread": 0.1,
+"predicted": {
+"ra": 221.16063842100343,
+"dec": 13.714791104256822,
+"mjd": 61058.701657589496,
+"date": "2026-01-18 16:50Z"
+},
+"daysAhead": 208.1,
+"jumpDeg": 2.787,
+"arc": [
+{
+"distanceAu": 44.45,
+"ra": 221.4432488134946,
+"dec": 13.578404902768126
+},
+{
+"distanceAu": 45.53,
+"ra": 221.36974862916276,
+"dec": 13.613858579849424
+},
+{
+"distanceAu": 46.62,
+"ra": 221.29818082259968,
+"dec": 13.648391391618386
+},
+{
+"distanceAu": 47.75,
+"ra": 221.22849407823998,
+"dec": 13.682027669481862
+},
+{
+"distanceAu": 48.9,
+"ra": 221.16063842100343,
+"dec": 13.714791104256822
+},
+{
+"distanceAu": 50.08,
+"ra": 221.09456518428283,
+"dec": 13.746704761859997
+},
+{
+"distanceAu": 51.29,
+"ra": 221.0302269784521,
+"dec": 13.77779109873382
+},
+{
+"distanceAu": 52.52,
+"ra": 220.96757765990407,
+"dec": 13.808071977001934
+},
+{
+"distanceAu": 53.79,
+"ra": 220.90657230062894,
+"dec": 13.837568679348704
+}
+],
+"window": {
+"start": "2026-01-18 00:32Z",
+"end": "2026-01-18 23:27Z",
+"exposures": 16
+},
+"grid": {
+"size": 351,
+"pixelScaleArcsec": 6.15,
+"center": {
+"ra": 221.17505895898344,
+"dec": 13.708131278688452
+}
+},
+"tracked": null,
+"static": null,
+"found": null,
+"truth": {
+"ra": 221.08215,
+"dec": 13.74711,
+"predictionErrorArcmin": 4.97,
+"foundErrorArcsec": null,
+"source": "JPL Horizons, SPHEREx as observer"
+},
+"known": null,
+"method": "Predicted with the distance-focus model at 48.9 au. The search covers distances within \u00c2\u00b110% and 36 arcmin around them; the next visit's exposures (up to 20) are stacked twice, fixed on the sky and following the body at 48.9 au. A detection must stand out at S/N 7, be sharper when followed than when fixed, have no negative lobe beside it (a star shifted by a pixel), and appear in both halves of the exposures.",
+"seconds": 11.87,
+"source": "cache"
+}

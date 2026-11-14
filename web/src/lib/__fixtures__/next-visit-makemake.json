@@ -1,0 +1,106 @@
+{
+"schemaVersion": 1,
+"release": "SPHEREx DR1 + QR3 (pipeline R7), read from the public AWS bucket",
+"status": "found",
+"body": "makemake",
+"name": "Makemake",
+"seed": {
+"ra": 199.94124,
+"dec": 21.48776,
+"mjd": 60834.388386351,
+"date": "2025-06-08 09:19Z"
+},
+"distanceAu": 48.9,
+"spread": 0.1,
+"predicted": {
+"ra": 202.59134769606658,
+"dec": 20.107222337419536,
+"mjd": 61041.862006594,
+"date": "2026-01-01 20:41Z"
+},
+"daysAhead": 207.5,
+"jumpDeg": 2.836,
+"arc": [
+{
+"distanceAu": 44.45,
+"ra": 202.88204075676865,
+"dec": 19.95527431451596
+},
+{
+"distanceAu": 45.53,
+"ra": 202.80645242604876,
+"dec": 19.99480888565643
+},
+{
+"distanceAu": 46.62,
+"ra": 202.73284201943514,
+"dec": 20.03329268555433
+},
+{
+"distanceAu": 47.75,
+"ra": 202.66115737979234,
+"dec": 20.070754506850694
+},
+{
+"distanceAu": 48.9,
+"ra": 202.59134769606658,
+"dec": 20.107222337419536
+},
+{
+"distanceAu": 50.08,
+"ra": 202.5233634719925,
+"dec": 20.142723382394742
+},
+{
+"distanceAu": 51.29,
+"ra": 202.45715649525334,
+"dec": 20.177284085687738
+},
+{
+"distanceAu": 52.52,
+"ra": 202.39267980711057,
+"dec": 20.210930150997836
+},
+{
+"distanceAu": 53.79,
+"ra": 202.3298876725155,
+"dec": 20.24368656231822
+}
+],
+"window": {
+"start": "2025-12-31 13:46Z",
+"end": "2026-01-02 13:06Z",
+"exposures": 17
+},
+"grid": {
+"size": 351,
+"pixelScaleArcsec": 6.15,
+"center": {
+"ra": 202.6062188844811,
+"dec": 20.099694885242535
+}
+},
+"tracked": null,
+"static": null,
+"found": {
+"ra": 202.31142671127384,
+"dec": 20.1506996102684,
+"snr": 9.1,
+"halves": [
+5.2,
+4.5
+],
+"offsetArcmin": 15.98
+},
+"truth": {
+"ra": 202.31194,
+"dec": 20.15121,
+"predictionErrorArcmin": 15.96,
+"foundErrorArcsec": 2.5,
+"source": "JPL Horizons, SPHEREx as observer"
+},
+"known": null,
+"method": "Predicted with the distance-focus model at 48.9 au. The search covers distances within \u00c2\u00b110% and 36 arcmin around them; the next visit's exposures (up to 20) are stacked twice, fixed on the sky and following the body at 48.9 au. A detection must stand out at S/N 7, be sharper when followed than when fixed, have no negative lobe beside it (a star shifted by a pixel), and appear in both halves of the exposures.",
+"seconds": 8.48,
+"source": "cache"
+}

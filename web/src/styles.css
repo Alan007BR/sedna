@@ -109,6 +109,19 @@ a { color: inherit; }
 .coach-dots li.done { background: var(--muted-strong); border-color: var(--muted-strong); }
 .coach-dots li.now { background: var(--red-text); border-color: var(--red-text); }
 .coach-text { margin: 0; font-size: 15px; line-height: 23px; color: var(--fg); }
+.next-visit { display: grid; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
+.next-visit .stage.small { width: min(100%, 420px); cursor: default; justify-self: center; }
+.chart-legend i.hollow.ice { border-color: var(--ice); }
+.zooms { display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; }
+.zoom { margin: 0; display: grid; gap: 6px; justify-items: center; }
+.zoom-frame { position: relative; width: 180px; aspect-ratio: 1; background: #000; }
+.zoom-frame canvas, .zoom-frame svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.zoom-frame canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
+.zoom figcaption { font-size: 12px; line-height: 16px; color: var(--muted-strong); }
+.ruler-table { width: 100%; border-collapse: collapse; font-size: 13px; line-height: 19px; }
+.ruler-table th { text-align: left; font-weight: 500; font-size: 11px; color: var(--muted); border-bottom: 1px solid var(--line-strong); padding: 4px 8px 4px 0; }
+.ruler-table td { color: var(--muted-strong); border-bottom: 1px solid var(--line); padding: 5px 8px 5px 0; }
+.ruler-table tr.in td { color: var(--ice); }
 .text.ice { color: var(--ice); }
 .text.ice:hover { color: var(--fg); }
 .measure { width: 100%; max-width: 620px; }

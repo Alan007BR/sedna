@@ -25,8 +25,14 @@ from .science import parallax
 from .focus_service import focus_body
 from .brightness_service import measure_point
 from .brightness_service import wavemap as brightness_wavemap
-from .models import BrightnessResponse, MoversResponse
+from .archive import horizons
+from .models import BrightnessResponse, MoversResponse, NextVisitResponse, RulerResponse
 from .movers_service import MAX_RATE_ARCSEC_H, VISIBLE_V, movers_in_field
+from .next_visit_service import DISTANCE_SPREAD as NV_SPREAD
+from .next_visit_service import MAX_EXPOSURES as NV_MAX
+from .next_visit_service import REGION_ARCMIN as NV_REGION
+from .next_visit_service import next_visit
+from .science.movers import separation_arcsec, tangent_offsets_arcsec
 from .science.focus import INFINITY_AU, judge
 from .science.stack import DETECTOR_RANGE_UM, PIXEL_ARCSEC, build_stack
 from .targets import TARGETS, propagate
@@ -149,16 +155,140 @@ def gaia(ra: float, dec: float, fov: float = 6.0):
     return {"schemaVersion": SCHEMA, "catalog": "Gaia DR3", "refEpoch": 2016.0, "sources": rows}
 
 
-@app.get("/api/parallax-ruler")
-def parallax_ruler(ra: float, dec: float, mjd_a: float, mjd_b: float):
-    """Where a body seen at (ra, dec) on date A would be on date B, for a ladder of distances."""
-    distances = [40, 50, 75, 100, 150, 200, 300, 500, 800, 1500, 206265 * 2.0]
-    ras, decs = parallax.predict_track(ra, dec, mjd_a, np.array(distances), np.array([mjd_b]))
+@app.get("/api/parallax-ruler", response_model=RulerResponse)
+def parallax_ruler(
+    ra: float = Query(..., ge=0, lt=360),
+    dec: float = Query(..., ge=-90, le=90),
+    mjd_a: float = Query(..., ge=60000, le=70000),
+    mjd_b: float = Query(..., ge=60000, le=70000),
+    fov: float = Query(6.0, ge=1.0, le=30.0),
+):
+    """Where a body seen at (ra, dec) on date A would be on date B, at 50, 100, 300 and 500 au and at 2 pc."""
+    ras, decs = parallax.ruler(ra, dec, mjd_a, mjd_b)
+    east, north = tangent_offsets_arcsec(ras, decs, ra, dec)
+    shift = separation_arcsec(ras, decs, ra, dec)
+    half = fov * 60 / 2
+    marks = []
+    for d, r, c, e, n, s in zip(parallax.RULER_AU, ras, decs, east, north, shift):
+        marks.append(
+            {
+                "distanceAu": d,
+                "label": "2 pc (a nearby star)" if d > 1e5 else f"{d:.0f} au",
+                "ra": float(r),
+                "dec": float(c),
+                "eastArcsec": float(e),
+                "northArcsec": float(n),
+                "shiftArcsec": float(s),
+                "inField": bool(abs(e) <= half and abs(n) <= half),
+            }
+        )
     return {
         "schemaVersion": SCHEMA,
-        "assumption": "circular, prograde orbit in the ecliptic; observer at the geocentre",
-        "marks": [{"distanceAu": d, "ra": float(ras[i, 0]), "dec": float(decs[i, 0])} for i, d in enumerate(distances)],
+        "anchor": {"ra": ra, "dec": dec, "mjd": mjd_a, "date": iso(mjd_a)},
+        "to": {"ra": ra, "dec": dec, "mjd": mjd_b, "date": iso(mjd_b)},
+        "fovArcmin": fov,
+        "marks": marks,
+        "staysInFieldBeyondAu": parallax.stays_in_field_beyond(ra, dec, mjd_a, mjd_b, half),
+        "assumption": "A Solar System body on a circular, prograde orbit in the ecliptic, seen from the Earth's centre. The 2 pc mark is a star's parallax alone; real stars also have their own motion.",
     }
+
+
+def _next_visit_payload(body: str | None, name: str, seed: dict, distance: float, truth_ident: str | None) -> dict:
+    t0 = time.time()
+    nv = next_visit(index(), seed["ra"], seed["dec"], seed["mjd"], distance)
+    base = {
+        "schemaVersion": SCHEMA,
+        "release": RELEASE,
+        "status": nv.status,
+        "body": body,
+        "name": name,
+        "seed": {"ra": seed["ra"], "dec": seed["dec"], "mjd": seed["mjd"], "date": iso(seed["mjd"])},
+        "distanceAu": round(distance, 2),
+        "spread": NV_SPREAD,
+        "predicted": None,
+        "daysAhead": None,
+        "jumpDeg": None,
+        "arc": [{"distanceAu": round(d, 2), "ra": r, "dec": c} for d, r, c in nv.arc],
+        "window": None,
+        "grid": None,
+        "tracked": None,
+        "static": None,
+        "found": None,
+        "truth": None,
+        "known": None,
+        "method": (
+            f"Predicted with the distance-focus model at {distance:.1f} au. The search covers distances within ±{NV_SPREAD:.0%} and {NV_REGION:.0f} arcmin around them; "
+            f"the next visit's exposures (up to {NV_MAX}) are stacked twice, fixed on the sky and following the body at {distance:.1f} au. A detection must stand out at S/N 7, "
+            "be sharper when followed than when fixed, have no negative lobe beside it (a star shifted by a pixel), and appear in both halves of the exposures."
+        ),
+        "seconds": 0.0,
+        "source": "archive",
+    }
+    if np.isfinite(nv.t_mid):
+        base["predicted"] = {"ra": nv.predicted[0], "dec": nv.predicted[1], "mjd": nv.t_mid, "date": iso(nv.t_mid)}
+        base["daysAhead"] = round(nv.t_mid - seed["mjd"], 1)
+        base["jumpDeg"] = round(float(separation_arcsec(seed["ra"], seed["dec"], *nv.predicted)) / 3600, 3)
+    if nv.tracked is not None:
+        base["window"] = {"start": iso(nv.window[0]), "end": iso(nv.window[1]), "exposures": nv.exposures}
+        base["grid"] = {"size": nv.size, "pixelScaleArcsec": PIXEL_ARCSEC, "center": {"ra": nv.centre[0], "dec": nv.centre[1]}}
+        base["tracked"] = encode(np.nan_to_num(nv.tracked, nan=0.0))
+        base["static"] = encode(np.nan_to_num(nv.static, nan=0.0))
+    if nv.found:
+        f = nv.found
+        base["found"] = {"ra": f["ra"], "dec": f["dec"], "snr": round(f["snr"], 1), "halves": [round(v, 1) for v in f["halves"]], "offsetArcmin": round(f["offset_arcsec"] / 60, 2)}
+        if not truth_ident:
+            base["known"] = known_object(f["ra"], f["dec"], nv.t_mid, radius_arcsec=30.0)
+    if truth_ident and np.isfinite(nv.t_mid):
+        eph = horizons.at_times(truth_ident, [nv.t_mid])
+        tr, td = float(eph["ra"][0]), float(eph["dec"][0])
+        base["truth"] = {
+            "ra": tr,
+            "dec": td,
+            "predictionErrorArcmin": round(float(separation_arcsec(*nv.predicted, tr, td)) / 60, 2),
+            "foundErrorArcsec": round(float(separation_arcsec(nv.found["ra"], nv.found["dec"], tr, td)), 1) if nv.found else None,
+            "source": "JPL Horizons, SPHEREx as observer",
+        }
+    base["seconds"] = round(time.time() - t0, 2)
+    return base
+
+
+@app.get("/api/next-visit", response_model=NextVisitResponse)
+def next_visit_body(body: str, visit: int = Query(0, ge=0, le=20)):
+    """Predict a known body's position at SPHEREx's next visit from its distance focus, and look for it there."""
+    target = TARGETS.get(body)
+    if not target or "horizons" not in target:
+        raise HTTPException(404, detail={"code": "TARGET_NOT_FOUND", "message": "The next-visit check has controls for Makemake, Haumea, Pluto and Eris."})
+    key = hashlib.sha1(f"next|{SCHEMA}|{body}|{visit}|{index().n}".encode()).hexdigest()
+    path = CACHE / f"{key}.json"
+    if path.exists():
+        payload = json.loads(path.read_text())
+        payload["source"] = "cache"
+        return payload
+    f = focus(body, visit)
+    payload = _next_visit_payload(body, target["name"], f["seed"], f["bestDistanceAu"], target["horizons"])
+    CACHE.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload))
+    return payload
+
+
+@app.get("/api/next-visit-at", response_model=NextVisitResponse)
+def next_visit_at(
+    ra: float = Query(..., ge=0, lt=360),
+    dec: float = Query(..., ge=-90, le=90),
+    mjd: float = Query(..., ge=60000, le=70000),
+    distance: float = Query(..., ge=10, le=2000),
+):
+    """The same check for a point the person picked, at the distance the focus found."""
+    key = hashlib.sha1(f"next-at|{SCHEMA}|{ra:.5f}|{dec:.5f}|{mjd:.4f}|{distance:.2f}|{index().n}".encode()).hexdigest()
+    path = CACHE / f"{key}.json"
+    if path.exists():
+        payload = json.loads(path.read_text())
+        payload["source"] = "cache"
+        return payload
+    payload = _next_visit_payload(None, "the point you picked", {"ra": ra, "dec": dec, "mjd": mjd}, distance, None)
+    CACHE.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload))
+    return payload
 
 
 @app.get("/api/focus")

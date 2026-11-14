@@ -18,6 +18,8 @@ Named after 90377 Sedna, found on 14 November 2003 by comparing images of the sa
 - **Brightness and spectrum.** Click any star (or open a variable star) to measure it in every exposure: how its brightness changed over time, per detector, and its 0.75–5 µm spectrum on a chosen date. Each exposure's wavelength comes from the pipeline's own spectral map, and each spectral channel is compared only with itself, so a spectrum full of molecular bands is not mistaken for a change. Saturated stars are measured in their wings. Every value can be downloaded as CSV.
 - **Single exposures.** Every exposure of a visit in time order. Pause, click any point, and measure its distance with the focus.
 - **Distance focus.** Three steps: watch the point walk among the stars, turn the knob until it snaps into focus, check the distance against JPL Horizons.
+- **Next visit.** From the focus distance, SEDNA predicts where the body will be at SPHEREx's next visit, months later and degrees away, then follows the whole predicted region in that visit's exposures. Makemake is found again 2.5″ and 2.8″ from JPL Horizons' position, although the prediction itself was 16′ and 8′ off. Misses are reported as misses.
+- **Parallax ruler.** On any field and pair of visits, shows how far a body at 50, 100, 300 or 500 au, or a star at 2 pc, would move: the reason a blink of fixed coordinates cannot catch a distant world.
 - **Shareable.** The URL reproduces the view, and there is a direct link to the same sky in WiseView.
 
 ## Validation

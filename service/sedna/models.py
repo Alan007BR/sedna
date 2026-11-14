@@ -98,6 +98,81 @@ class BrightnessResponse(BaseModel):
     source: Literal["archive", "cache"]
 
 
+class DatedPoint(BaseModel):
+    ra: float
+    dec: float
+    mjd: float
+    date: str
+
+
+class ArcPoint(BaseModel):
+    distanceAu: float
+    ra: float
+    dec: float
+
+
+class NextVisitFound(BaseModel):
+    ra: float
+    dec: float
+    snr: float
+    halves: tuple[float, float]  # S/N in the first and second half of the exposures
+    offsetArcmin: float  # from the predicted position
+
+
+class NextVisitTruth(BaseModel):
+    ra: float
+    dec: float
+    predictionErrorArcmin: float
+    foundErrorArcsec: float | None
+    source: str
+
+
+class NextVisitResponse(BaseModel):
+    schemaVersion: int
+    release: str
+    status: Literal["found", "not_found", "not_observed"]
+    body: str | None
+    name: str
+    seed: DatedPoint
+    distanceAu: float
+    spread: float
+    predicted: DatedPoint | None
+    daysAhead: float | None
+    jumpDeg: float | None
+    arc: list[ArcPoint]
+    window: dict | None  # start, end, exposures
+    grid: dict | None  # size, pixelScaleArcsec, center
+    tracked: str | None  # float32 little-endian, base64, row 0 south
+    static: str | None
+    found: NextVisitFound | None
+    truth: NextVisitTruth | None
+    known: dict | None
+    method: str
+    seconds: float
+    source: Literal["archive", "cache"]
+
+
+class RulerMark(BaseModel):
+    distanceAu: float
+    label: str
+    ra: float
+    dec: float
+    eastArcsec: float
+    northArcsec: float
+    shiftArcsec: float
+    inField: bool
+
+
+class RulerResponse(BaseModel):
+    schemaVersion: int
+    anchor: DatedPoint
+    to: DatedPoint
+    fovArcmin: float
+    marks: list[RulerMark]
+    staysInFieldBeyondAu: float | None
+    assumption: str
+
+
 class MoversResponse(BaseModel):
     schemaVersion: int
     release: str

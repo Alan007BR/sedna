@@ -90,7 +90,7 @@ cd service
 
 ## Data and credits
 
-- **NASA SPHEREx** Level-2 spectral images, Data Release 1 and Quick Release 3, from the NASA/IPAC Infrared Science Archive, read from the AWS Open Data bucket `nasa-irsa-spherex`. DOIs: [10.26131/IRSA652](https://doi.org/10.26131/IRSA652), [10.26131/IRSA662](https://doi.org/10.26131/IRSA662).
+- **NASA SPHEREx** Level-2 spectral images, Data Release 1 and Quick Release 3, from the NASA/IPAC Infrared Science Archive, read from the AWS Open Data bucket `nasa-irsa-spherex`. DOIs: [10.26131/IRSA678](https://doi.org/10.26131/IRSA678) (DR1 Spectral Images) and [10.26131/IRSA662](https://doi.org/10.26131/IRSA662) (QR3).
   This work makes use of data products from the Spectro-Photometer for the History of the Universe, Epoch of Reionization and Ices Explorer (SPHEREx), which is a joint project of the Jet Propulsion Laboratory and the California Institute of Technology, and is funded by the National Aeronautics and Space Administration.
 - **ESA Gaia DR3**, through the ESA Gaia archive.
 - **JPL Horizons** (SPHEREx as observer, `500@-163182`) and **IMCCE SkyBoT** for Solar System bodies.

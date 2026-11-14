@@ -1,0 +1,26 @@
+{
+  "brand": "SEDNA",
+  "tagline": "Explore the Unseen.",
+  "colors": {
+    "void": "#020305",
+    "light": "#ECEEF2",
+    "red": "#C2462C",
+    "signal": "#E0694A",
+    "muted": "#7E8595",
+    "line": "#2C313E",
+    "surface": "#0B0D12"
+  },
+  "fontFamily": {
+    "words": "IBM Plex Sans",
+    "data": "IBM Plex Mono"
+  },
+  "minimumWidthPx": {
+    "symbol": 32,
+    "symbol-micro": 16,
+    "horizontal": 180,
+    "horizontal-tagline": 320,
+    "wordmark": 120,
+    "wordmark-tagline": 240,
+    "stacked": 280
+  }
+}

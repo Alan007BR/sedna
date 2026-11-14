@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#020305">
+  <title>SEDNA — Identidade visual</title>
+  <link rel="icon" href="applications/sedna-icon-32.png">
+  <style>
+    @font-face{font-family:Plex;src:url(fonts/ibm-plex-sans-300.woff2) format('woff2');font-weight:300;font-display:swap}
+    @font-face{font-family:Plex;src:url(fonts/ibm-plex-sans-400.woff2) format('woff2');font-weight:400;font-display:swap}
+    @font-face{font-family:Plex;src:url(fonts/ibm-plex-sans-500.woff2) format('woff2');font-weight:500;font-display:swap}
+    @font-face{font-family:PlexMono;src:url(fonts/ibm-plex-mono-400.woff2) format('woff2');font-weight:400;font-display:swap}
+    :root{color-scheme:dark;--void:#020305;--light:#eceef2;--red:#c2462c;--signal:#e0694a;--muted:#7e8595;--line:#2c313e}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--void);color:var(--light);font:400 17px/1.6 Plex,sans-serif}a{color:inherit;text-decoration-thickness:1px;text-underline-offset:5px}a:hover{color:var(--signal)}button{font:inherit;cursor:pointer}button:focus-visible,a:focus-visible{outline:2px solid var(--light);outline-offset:5px}img{display:block;max-width:100%;height:auto}h1,h2,h3,p{margin:0}h1,h2{font-weight:300;line-height:1.1}h2{font-size:clamp(34px,4vw,62px);max-width:900px}h3{font-size:18px;font-weight:400}p{max-width:700px}.wrap{width:min(1320px,calc(100% - 96px));margin:auto}.mono{font:400 11px/1.5 PlexMono,monospace;letter-spacing:.11em;text-transform:uppercase}.muted{color:var(--muted)}
+    header{display:flex;align-items:center;justify-content:space-between;gap:30px;padding:28px 0}header img{width:180px}header nav{display:flex;gap:30px;align-items:center}header a{text-decoration:none;font-size:14px}.hero{min-height:730px;min-height:calc(100svh - 102px);display:flex;flex-direction:column;justify-content:center;padding:70px 0 36px}.hero .eyebrow{margin-bottom:75px}.hero-logo{width:min(1120px,100%);margin:0 auto}.hero-bottom{display:flex;justify-content:space-between;align-items:end;gap:50px;margin-top:90px}.hero-bottom p{font-size:20px;max-width:370px}.hero-bottom a{white-space:nowrap}
+    section{border-top:1px solid var(--line);padding:80px 0 96px}.section-head{display:flex;justify-content:space-between;gap:50px;align-items:start;margin-bottom:52px}.section-head .mono{flex-shrink:0;margin-top:9px}.story{display:grid;grid-template-columns:1fr 1fr;gap:100px}.story p{font-size:22px}.story .caption{margin-top:30px;font-size:14px;color:var(--muted)}.date{font-family:PlexMono,monospace;color:var(--signal);font-size:16px;letter-spacing:.06em;margin-top:40px}
+    .switcher{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:25px}.switcher button{background:none;border:1px solid var(--line);color:var(--muted);padding:10px 20px;border-radius:999px;font-size:14px;min-height:44px}.switcher button[aria-pressed=true]{color:var(--light);border-color:var(--light)}.variants{display:grid;grid-template-columns:1fr 1fr;gap:30px}.variant{min-width:0}.artboard{height:310px;display:flex;align-items:center;justify-content:center;padding:44px;border:1px solid var(--line);transition:background .15s}.artboard img{width:100%;max-height:220px}.variant[data-variant=stacked] img{width:290px}.variant[data-variant=symbol] img{width:180px}.variant[data-variant=symbol-micro] img{width:120px}.variant-meta{display:flex;justify-content:space-between;gap:14px;align-items:center;padding:14px 0 26px}.variant-meta nav{display:flex;gap:16px}.variant-meta a{font:12px PlexMono,monospace}.preview-light .artboard{background:var(--light)}.preview-red .artboard{background:var(--red);border-color:var(--red)}.preview-black .artboard{background:#fff}.preview-white .artboard{background:#000}
+    .palette{display:grid;grid-template-columns:repeat(5,1fr);gap:24px}.swatch{height:155px;border:1px solid var(--line);margin-bottom:20px}.color-name{font-size:18px}.color-value{font:13px PlexMono,monospace;color:var(--muted);margin-top:8px}.type-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;margin-top:80px}.type-sample{font-size:70px;line-height:1.2;font-weight:300;margin:20px 0}.type-sample.mono-sample{font-family:PlexMono,monospace;font-size:54px}.type-grid p{color:var(--muted);max-width:460px}.applications{display:grid;grid-template-columns:1.6fr 1fr;gap:30px}.applications .cover{width:100%;border:1px solid var(--line)}.applications .avatar{width:100%;height:100%;object-fit:contain;background:var(--red)}.application-caption{margin-top:18px;font-size:14px;color:var(--muted)}.downloads{display:grid;grid-template-columns:repeat(3,1fr);gap:35px;margin-top:50px}.downloads a{font-size:22px}.downloads p{font-size:15px;color:var(--muted);margin-top:15px}footer{border-top:1px solid var(--line);padding:30px 0 45px;display:flex;justify-content:space-between;gap:30px}footer a{font-size:13px;color:var(--muted)}
+    @media(max-width:800px){.wrap{width:calc(100% - 40px)}header img{width:145px}header nav{gap:18px}header nav a:first-child{display:none}.hero{min-height:580px;padding-top:60px}.hero .eyebrow{margin-bottom:65px}.hero-bottom{margin-top:65px;align-items:start}.hero-bottom p{font-size:17px}.hero-bottom a{font-size:13px}.section-head{display:block;margin-bottom:36px}.section-head .mono{margin-bottom:20px}.story{grid-template-columns:1fr;gap:28px}.story p{font-size:20px}.variants{gap:20px}.artboard{height:210px;padding:22px}.variant[data-variant=stacked] img{height:170px}.variant[data-variant=symbol] img{width:130px}.variant-meta{flex-direction:column;align-items:start;gap:7px}.palette{gap:13px}.swatch{height:90px}.color-name{font-size:14px}.color-value{font-size:10px}.type-grid{gap:30px}.type-sample{font-size:60px}.type-sample.mono-sample{font-size:40px}.applications{grid-template-columns:1fr}.applications .avatar{width:220px}.downloads{grid-template-columns:1fr;gap:32px}section{padding:55px 0 65px}}
+    @media(max-width:480px){.hero{min-height:510px}.hero .eyebrow{font-size:10px;letter-spacing:.04em}.hero-bottom{flex-direction:column;gap:23px}.variants{grid-template-columns:1fr}.artboard{height:240px}.variant-meta{flex-direction:row;align-items:center}.palette{grid-template-columns:repeat(3,1fr)}.type-grid{grid-template-columns:1fr}.type-sample{margin-top:14px}footer{flex-direction:column}.downloads a{font-size:20px}}
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.artboard{transition:none}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header><a href="#top" aria-label="SEDNA, início"><img src="logos/svg/sedna-horizontal-on-dark.svg" alt="SEDNA" width="640" height="160"></a><nav aria-label="Navegação"><a href="#logos">As assinaturas</a><a href="guide/SEDNA-Brand-Guide.pdf">Guia da marca ↗</a></nav></header>
+  <main id="top">
+    <div class="hero">
+      <p class="mono muted eyebrow">Identidade visual / 01 &nbsp;&nbsp; 14.11.2026</p>
+      <h1><img class="hero-logo" src="logos/svg/sedna-horizontal-tagline-on-dark.svg" alt="SEDNA — Explore the Unseen." width="640" height="192"></h1>
+      <div class="hero-bottom"><p>Uma mudança revela<br>um mundo.</p><a href="#logos">Explorar a identidade ↓</a></div>
+    </div>
+    <section>
+      <div class="section-head"><span class="mono muted">01 / A ideia</span><h2>Um ponto que pede<br>um segundo olhar.</h2></div>
+      <div class="story"><div><p>Uma órbita alongada, uma abertura e um ponto vermelho. A identidade nasce da observação de algo que mudou de lugar.</p><div class="date">14.11.2003 → 14.11.2026</div></div><div><p>Foi o pequeno deslocamento entre três imagens que revelou Sedna. O projeto transforma essa mesma curiosidade em uma experiência de exploração.</p><p class="caption">A forma é uma interpretação gráfica da órbita, sem escala astronômica. <a href="https://science.nasa.gov/photojournal/sedna-discovery-image/">Veja a imagem da descoberta na NASA.</a></p></div></div>
+    </section>
+    <section id="logos">
+      <div class="section-head"><span class="mono muted">02 / As assinaturas</span><h2>Uma identidade.<br>Em cada escala.</h2></div>
+      <div class="switcher" role="group" aria-label="Cor e fundo da prévia"><button type="button" data-style="on-dark" aria-pressed="true">Void</button><button type="button" data-style="on-light" aria-pressed="false">Claro</button><button type="button" data-style="white" aria-pressed="false">Branco</button><button type="button" data-style="black" aria-pressed="false">Preto</button><button type="button" data-style="red-surface" aria-pressed="false">Sobre vermelho</button></div>
+      <div id="variants" class="variants">
+        <article class="variant" data-variant="horizontal"><div class="artboard"><img src="logos/svg/sedna-horizontal-on-dark.svg" alt="SEDNA, símbolo com nome" width="640" height="160"></div><div class="variant-meta"><h3>Símbolo + nome</h3><nav aria-label="Baixar símbolo com nome"><a data-format="svg" href="logos/svg/sedna-horizontal-on-dark.svg" download>SVG ↓</a><a data-format="png" href="logos/png/sedna-horizontal-on-dark.png" download>PNG ↓</a></nav></div></article>
+        <article class="variant" data-variant="horizontal-tagline"><div class="artboard"><img src="logos/svg/sedna-horizontal-tagline-on-dark.svg" alt="SEDNA, símbolo com nome e tagline" width="640" height="192"></div><div class="variant-meta"><h3>Com tagline</h3><nav aria-label="Baixar marca com tagline"><a data-format="svg" href="logos/svg/sedna-horizontal-tagline-on-dark.svg" download>SVG ↓</a><a data-format="png" href="logos/png/sedna-horizontal-tagline-on-dark.png" download>PNG ↓</a></nav></div></article>
+        <article class="variant" data-variant="wordmark"><div class="artboard"><img src="logos/svg/sedna-wordmark-on-dark.svg" alt="SEDNA, apenas o nome" width="480" height="112"></div><div class="variant-meta"><h3>Somente o nome</h3><nav aria-label="Baixar nome"><a data-format="svg" href="logos/svg/sedna-wordmark-on-dark.svg" download>SVG ↓</a><a data-format="png" href="logos/png/sedna-wordmark-on-dark.png" download>PNG ↓</a></nav></div></article>
+        <article class="variant" data-variant="wordmark-tagline"><div class="artboard"><img src="logos/svg/sedna-wordmark-tagline-on-dark.svg" alt="SEDNA, nome e tagline" width="480" height="168"></div><div class="variant-meta"><h3>Nome + tagline</h3><nav aria-label="Baixar nome com tagline"><a data-format="svg" href="logos/svg/sedna-wordmark-tagline-on-dark.svg" download>SVG ↓</a><a data-format="png" href="logos/png/sedna-wordmark-tagline-on-dark.png" download>PNG ↓</a></nav></div></article>
+        <article class="variant" data-variant="symbol"><div class="artboard"><img src="logos/svg/sedna-symbol-on-dark.svg" alt="Símbolo orbital SEDNA" width="160" height="160"></div><div class="variant-meta"><h3>Somente o símbolo</h3><nav aria-label="Baixar símbolo"><a data-format="svg" href="logos/svg/sedna-symbol-on-dark.svg" download>SVG ↓</a><a data-format="png" href="logos/png/sedna-symbol-on-dark.png" download>PNG ↓</a></nav></div></article>
+        <article class="variant" data-variant="stacked"><div class="artboard"><img src="logos/svg/sedna-stacked-on-dark.svg" alt="SEDNA, assinatura vertical" width="560" height="390"></div><div class="variant-meta"><h3>Assinatura vertical</h3><nav aria-label="Baixar assinatura vertical"><a data-format="svg" href="logos/svg/sedna-stacked-on-dark.svg" download>SVG ↓</a><a data-format="png" href="logos/png/sedna-stacked-on-dark.png" download>PNG ↓</a></nav></div></article>
+        <article class="variant" data-variant="symbol-micro"><div class="artboard"><img src="logos/svg/sedna-symbol-micro-on-dark.svg" alt="Símbolo simplificado para tamanhos pequenos" width="160" height="160"></div><div class="variant-meta"><h3>Símbolo micro · 16–24 px</h3><nav aria-label="Baixar símbolo micro"><a data-format="svg" href="logos/svg/sedna-symbol-micro-on-dark.svg" download>SVG ↓</a><a data-format="png" href="logos/png/sedna-symbol-micro-on-dark.png" download>PNG ↓</a></nav></div></article>
+      </div>
+      <p class="muted" style="font-size:14px;margin-top:18px">Os logos baixados têm fundo transparente. A superfície da prévia serve para conferir o contraste.</p>
+    </section>
+    <section>
+      <div class="section-head"><span class="mono muted">03 / Cores e letras</span><h2>Espaço para<br>o que importa.</h2></div>
+      <div class="palette"><div><div class="swatch" style="background:#020305"></div><p class="color-name">Void</p><p class="color-value">#020305</p></div><div><div class="swatch" style="background:#ECEEF2"></div><p class="color-name">Starlight</p><p class="color-value">#ECEEF2</p></div><div><div class="swatch" style="background:#C2462C"></div><p class="color-name">Sedna red</p><p class="color-value">#C2462C</p></div><div><div class="swatch" style="background:#E0694A"></div><p class="color-name">Signal</p><p class="color-value">#E0694A</p></div><div><div class="swatch" style="background:#7E8595"></div><p class="color-name">Muted</p><p class="color-value">#7E8595</p></div></div>
+      <div class="type-grid"><div><span class="mono muted">IBM Plex Sans</span><div class="type-sample">Explore.</div><p>Palavras claras, títulos leves e espaço entre as letras da marca.</p></div><div><span class="mono muted">IBM Plex Mono</span><div class="type-sample mono-sample">14.11 / 90377</div><p>Datas, coordenadas e números com ritmo estável entre observações.</p></div></div>
+    </section>
+    <section>
+      <div class="section-head"><span class="mono muted">04 / Aplicações</span><h2>Explore the Unseen.</h2></div>
+      <div class="applications"><div><a href="applications/sedna-social-1200x630.png" download aria-label="Baixar imagem social"><img class="cover" src="applications/sedna-social-1200x630.png" alt="Capa SEDNA com a frase Explore the Unseen." width="1200" height="630" loading="lazy"></a><p class="application-caption">Social · 1200 × 630</p></div><div><a href="applications/sedna-avatar-red.png" download aria-label="Baixar avatar vermelho"><img class="avatar" src="applications/sedna-avatar-red.png" alt="Avatar SEDNA sobre vermelho" width="1024" height="1024" loading="lazy"></a><p class="application-caption">Avatar · 1024 × 1024</p></div></div>
+    </section>
+    <section>
+      <div class="section-head"><span class="mono muted">05 / Para usar</span><h2>Da marca<br>ao produto.</h2></div>
+      <p class="muted">SVGs com letras em curvas para o Illustrator. PNGs transparentes para composição. Guia, paleta e instruções para quem vai implementar.</p>
+      <div class="downloads"><div><a href="guide/SEDNA-Brand-Guide.pdf">Guia da identidade ↗</a><p>Conceito, cores, tipografia, proporções e aplicações em dez páginas.</p></div><div><a href="guide/SEDNA-Logo-Masters.pdf">Matrizes vetoriais ↗</a><p>Sete composições, em fundos claros e escuros, para abrir no Illustrator.</p></div><div><a href="handoff/CLAUDE-HANDOFF.md">Entrega para implementação ↗</a><p>Arquivos, tamanhos e orientações para integrar a marca à aplicação.</p></div><div><a href="handoff/SEDNA-Palette.ase" download>Paleta Adobe ASE ↓</a><p>Amostras de cor para Illustrator e Photoshop.</p></div><div><a href="applications/sedna-presentation-1920x1080.png" download>Capa de apresentação ↓</a><p>Composição em 1920 × 1080.</p></div><div><a href="applications/sedna-story-1080x1920.png" download>Peça vertical ↓</a><p>Composição em 1080 × 1920.</p></div></div>
+    </section>
+  </main>
+  <footer><span class="mono muted">SEDNA / Explore the Unseen.</span><a href="README.md">Leia as orientações de uso</a><span class="mono muted">14.11.2026 / v1.0</span></footer>
+</div>
+<script>
+  const buttons = [...document.querySelectorAll('[data-style]')];
+  const variants = document.querySelector('#variants');
+  buttons.forEach(button => button.addEventListener('click', () => {
+    const style = button.dataset.style;
+    const assetStyle = style === 'red-surface' ? 'white' : style;
+    const previewClass = {'on-dark':'','on-light':'preview-light','red-surface':'preview-red','white':'preview-white','black':'preview-black'}[style];
+    variants.className = `variants ${previewClass}`;
+    buttons.forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+    variants.querySelectorAll('[data-variant]').forEach(item => {
+      const base = `sedna-${item.dataset.variant}-${assetStyle}`;
+      item.querySelector('img').src = `logos/svg/${base}.svg`;
+      item.querySelectorAll('[data-format]').forEach(link => {
+        const fmt = link.dataset.format;
+        link.href = `logos/${fmt}/${base}.${fmt}`;
+      });
+    });
+  }));
+</script>
+</body>
+</html>

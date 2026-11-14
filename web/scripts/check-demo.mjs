@@ -125,6 +125,23 @@ for (const vp of [{ width: 390, height: 844 }, { width: 768, height: 1024 }, { w
 }
 
 for (const vp of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
+  await check(`pointing at the sky moves nothing at ${vp.width} px`, async (page) => {
+    await page.goto(`${APP}/?ra=269.44629&dec=4.76792&fov=4&band=2&mode=blink&target=barnard`);
+    await sky(page);
+    const parts = [".rail.left", ".stage", ".details", ".timeline", ".readout", ".caption"];
+    const snap = () => page.evaluate((sels) => sels.map((s) => { const r = document.querySelector(s)?.getBoundingClientRect(); return r ? `${Math.round(r.left)},${Math.round(r.top)},${Math.round(r.width)},${Math.round(r.height)}` : "-"; }).join("|"), parts);
+    await page.mouse.move(2, 2);
+    const before = await snap();
+    const box = await page.locator(".stage").boundingBox();
+    for (const [fx, fy] of [[0.5, 0.5], [0.1, 0.9], [0.9, 0.1]]) {
+      await page.mouse.move(box.x + box.width * fx, box.y + box.height * fy);
+      await page.waitForTimeout(100);
+      if ((await snap()) !== before) throw new Error(`layout moved: ${before} -> ${await snap()}`);
+    }
+  }, vp);
+}
+
+for (const vp of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
   await check(`sky view at ${vp.width} px: map, HUD clear of the data, Esc leaves`, async (page) => {
     await page.goto(`${APP}/?ra=269.44629&dec=4.76792&fov=4&band=2&mode=blink&target=barnard`);
     await sky(page);

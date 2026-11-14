@@ -67,7 +67,8 @@ a { color: inherit; }
 .viewer {
   --stage: min(620px, calc(100vh - 290px), calc(100vw - 740px));
   display: grid;
-  grid-template-columns: minmax(170px, 220px) auto minmax(300px, 380px);
+  /* the centre column is exactly the sky's width, so text that changes inside it never moves anything */
+  grid-template-columns: minmax(170px, 220px) var(--stage) minmax(300px, 380px);
   justify-content: center;
   gap: 18px 36px;
   align-items: start;
@@ -96,8 +97,13 @@ a { color: inherit; }
 .rail.left .opt { flex-direction: row-reverse; }
 .chips { display: flex; gap: 12px; }
 
-.stage-wrap { display: grid; gap: 10px; justify-items: center; }
+.stage-wrap { display: grid; gap: 10px; justify-items: center; min-width: 0; }
 .caption, .readout { width: 100%; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 11px; line-height: 16px; color: var(--muted); min-height: 16px; }
+/* the readout under the sky: two fixed lines that never wrap, so pointing at the sky changes text, not layout */
+.stage-wrap > .readout { display: grid; gap: 2px; flex-wrap: nowrap; height: 34px; }
+.stage-wrap > .readout span { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stage-wrap > .caption { flex-wrap: nowrap; }
+.stage-wrap > .caption span { white-space: nowrap; }
 .caption .now { color: var(--muted-strong); }
 .stage { position: relative; width: var(--stage, min(86vw, 62vh, 620px)); aspect-ratio: 1; background: #000; cursor: crosshair; }
 .stage canvas, .stage svg { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -181,7 +187,7 @@ a { color: inherit; }
 .hud-scale svg text { font: 500 8px var(--font-data); fill: var(--muted-strong); }
 .hud-scale > div { display: grid; gap: 3px; }
 .hud-bar { display: block; height: 5px; border: 1px solid var(--muted-strong); border-top: 0; }
-.hud-readout { margin: 0; font-size: 10px; line-height: 14px; color: var(--muted); min-height: 28px; }
+.hud-readout { margin: 0; font-size: 10px; line-height: 14px; color: var(--muted); height: 28px; overflow: hidden; }
 .hud-bc { left: 50%; bottom: 14px; transform: translateX(-50%); width: min(560px, calc(100vw - 560px)); min-width: 300px; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 14px; padding: 6px 14px 6px 8px; }
 .hud-bc .play { width: 40px; height: 40px; }
 .hud-bc .track { height: 40px; }
@@ -330,7 +336,7 @@ a { color: inherit; }
 .focus-result .chips { align-items: center; }
 
 @media (min-width: 821px) and (max-width: 1180px) {
-  .viewer { --stage: min(620px, calc(100vh - 290px), calc(100vw - 330px)); grid-template-columns: minmax(150px, 200px) auto; }
+  .viewer { --stage: min(620px, calc(100vh - 290px), calc(100vw - 330px)); grid-template-columns: minmax(150px, 200px) var(--stage); }
   .viewer.panel-mode { grid-template-columns: minmax(150px, 200px) minmax(0, 680px); }
   .details { grid-column: 2; position: static; max-height: none; overflow: visible; padding-top: 0; width: var(--stage); }
 }

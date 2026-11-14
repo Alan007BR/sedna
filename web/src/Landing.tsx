@@ -148,7 +148,7 @@ export default function Landing(p: Props) {
       <section className="landing-band rise d6" aria-labelledby="missions-title">
         <div className="landing-row-head">
           <h2 id="missions-title" className="mono">Start with a one-minute mission</h2>
-          <span className="mono credits">Data: NASA SPHEREx via IRSA · ESA Gaia DR3 · IMCCE SkyBoT</span>
+          <span className="mono credits">Data: NASA SPHEREx via IRSA · ESA Gaia DR3 · IMCCE SkyBoT · Logo and animations made with AI assistance</span>
         </div>
         <ul className="landing-missions">
           {p.missions.map((m, i) => (

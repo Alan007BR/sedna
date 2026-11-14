@@ -19,6 +19,7 @@ The orbit is stylized. Its 35° tilt, spacing, and dot sizes are chosen for legi
 - [SVG logos](logos/svg/) contain 35 transparent vector files: seven configurations in five color treatments.
 - [PNG logos](logos/png/) provide the same configurations as high-resolution transparent images.
 - [Applications](applications/) include avatars, a presentation cover, a social image, a vertical poster, and icons.
+- The [motion kit](motion/) includes three landing page animations in SVG, MP4, and WebM. Open [the motion gallery](motion/index.html) locally to preview and replay them.
 - The [brand guide](guide/SEDNA-Brand-Guide.pdf) covers the concept, logo variants, color, typography, minimum sizes, graphic language, and applications in ten pages.
 - The [vector logo masters](guide/SEDNA-Logo-Masters.pdf) show seven configurations on light and dark backgrounds.
 - The [fonts folder](fonts/) contains IBM Plex Sans and IBM Plex Mono in TTF and WOFF2, with their OFL licenses.

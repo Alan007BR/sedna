@@ -1,4 +1,17 @@
-# SEDNA
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/logos/svg/sedna-horizontal-tagline-on-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/brand/logos/svg/sedna-horizontal-tagline-on-light.svg">
+    <img src="docs/brand/logos/svg/sedna-horizontal-tagline-on-light.svg" alt="SEDNA — Explore the Unseen." width="640">
+  </picture>
+</p>
+
+<p align="center">
+  <a href="#what-it-does">Features</a> ·
+  <a href="#validation">Validation</a> ·
+  <a href="#run-it-locally">Run locally</a> ·
+  <a href="docs/brand/README.md">Brand identity</a>
+</p>
 
 **Watch the SPHEREx sky change over time, and focus it by distance.**
 

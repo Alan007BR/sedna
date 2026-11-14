@@ -2,6 +2,8 @@
 
 Visual identity v1.0 · November 14, 2026
 
+Made written with AI assistance (Codex)
+
 Open [the local gallery](index.html) in a browser to explore the variants, switch preview backgrounds, and download logos. The gallery works offline.
 
 ## Concept

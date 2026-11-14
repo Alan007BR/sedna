@@ -75,6 +75,7 @@ The distance focus and the region search are shift-and-stack, also called digita
 | edge-tts | https://github.com/rany2/edge-tts, the synthetic narration voice of the demo video (Microsoft neural text-to-speech) |
 | FFmpeg | https://ffmpeg.org/, to assemble the demo video |
 | IBM Plex Sans and Mono | SIL Open Font License, through Fontsource |
+| Affinity | https://www.affinity.studio/, the team's visual composition and design of the identity |
 
 Hosting: Vercel (the site) and AWS Lambda (the data service).
 

@@ -145,7 +145,7 @@ Every reference, with links and DOIs, including the published methods behind the
 
 ## Use of AI
 
-Built with AI coding assistants (Claude Code and Codex) under the team's direction. The idea of focusing the sky by distance is the team's; the AI helped check that it was feasible, and wrote much of the code with the team. The team designed the visual identity (name, historical research, references, sketches, style guide, colours and typography), and the AI generated the final logo and animations from it; they carry a visible AI label where they are shown. The demo video's narration voice is synthetic. Details: [AI_USAGE.md](AI_USAGE.md).
+Built with AI coding assistants (Claude Code and Codex) under the team's direction. The idea of focusing the sky by distance is the team's; the AI helped check that it was feasible, and wrote much of the code with the team. The team designed the visual identity (name, historical research, references, sketches, style guide, colours and typography, composed in Affinity), and the AI generated the final logo and animations from it; they carry a visible AI label where they are shown. The demo video's narration voice is synthetic. Details: [AI_USAGE.md](AI_USAGE.md).
 
 ## License
 

@@ -2,7 +2,7 @@
 
 Visual identity v1.0 · November 14, 2026
 
-The team designed this identity: the name, the historical research behind it, the references, the initial sketches, the style guide, the colours and the typography. From that direction, Codex generated the final assets: the logo variants and vector artwork, the guide, the gallery and the animations. Presentation images and videos carry a visible "Made with AI assistance" label; the logo files are kept clean so they can be used. See [AI_USAGE.md](../../AI_USAGE.md).
+The team designed this identity: the name, the historical research behind it, the references, the initial sketches, the style guide, the colours and the typography, with the visual composition and design done in Affinity. From that direction, Codex generated the final assets: the logo variants and vector artwork, the guide, the gallery and the animations. Presentation images and videos carry a visible "Made with AI assistance" label; the logo files are kept clean so they can be used. See [AI_USAGE.md](../../AI_USAGE.md).
 
 Open [the local gallery](index.html) in a browser to explore the variants, switch preview backgrounds, and download logos. The gallery works offline.
 

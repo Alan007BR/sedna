@@ -1,70 +1,65 @@
-# SEDNA · Identidade visual para implementação
+# SEDNA visual identity handoff
 
-Este pacote contém a proposta de identidade visual criada a pedido do Alan em 14.11.2026. A implementação da aplicação está sendo conduzida separadamente. Nenhum arquivo do produto foi alterado para produzir este kit.
+This kit documents the SEDNA visual identity prepared for Alan on November 14, 2026.
 
-## Comece por aqui
+## Getting started
 
-1. Veja `../SEDNA-Identity-Overview.png` e `../guide/SEDNA-Brand-Guide.pdf`.
-2. Use os SVGs finais em `../logos/svg/`. Não redesenhe a marca com CSS e não reconstrua o nome digitando uma fonte com letter-spacing aproximado.
-3. Copie apenas os arquivos efetivamente usados para o diretório de assets da aplicação.
-4. Preserve a identidade Void e as fontes IBM Plex já existentes. O novo kit formaliza a marca orbital e suas aplicações.
+1. Review the [identity overview](../SEDNA-Identity-Overview.png) and [brand guide](../guide/SEDNA-Brand-Guide.pdf).
+2. Use the supplied [SVG artwork](../logos/svg/) to preserve the geometry and letter spacing.
+3. Copy the assets used by the application into its asset directory.
+4. Retain the existing Void theme and IBM Plex fonts.
 
-## Arquivos recomendados
+## Recommended assets
 
-| Superfície | Asset | Regra |
+| Placement | Asset | Guidance |
 | --- | --- | --- |
-| Cabeçalho escuro | `sedna-horizontal-on-dark.svg` | Largura mínima de 180 px. |
-| Cabeçalho com pouco espaço | `sedna-wordmark-on-dark.svg` | Largura mínima de 120 px. |
-| Símbolo isolado | `sedna-symbol-on-dark.svg` | 32 px ou mais. |
-| Favicon ou marca de 16–24 px | `sedna-symbol-micro-on-dark.svg` | Traço reforçado, sem ponto interno. |
-| Abertura de apresentação | `sedna-horizontal-tagline-on-dark.svg` | 320 px ou mais. |
-| Assinatura vertical | `sedna-stacked-on-dark.svg` | 280 px ou mais. |
-| Nome com tagline | `sedna-wordmark-tagline-on-dark.svg` | 240 px ou mais. |
-| Compartilhamento | `../applications/sedna-social-1200x630.png` | Imagem final em 1200 × 630. |
-| Avatar | `../applications/sedna-avatar-dark.png` | 1024 × 1024, símbolo centralizado. |
-| Ícones | `../applications/sedna-icon-*.png` e `sedna-favicon.ico` | Tamanhos específicos, sem texto. |
+| Dark header | `sedna-horizontal-on-dark.svg` | Minimum width of 180 px. |
+| Compact header | `sedna-wordmark-on-dark.svg` | Minimum width of 120 px. |
+| Standalone symbol | `sedna-symbol-on-dark.svg` | 32 px or wider. |
+| Favicon or mark at 16–24 px | `sedna-symbol-micro-on-dark.svg` | Heavier stroke with the reference point omitted. |
+| Presentation opening | `sedna-horizontal-tagline-on-dark.svg` | 320 px or wider. |
+| Stacked logo | `sedna-stacked-on-dark.svg` | 280 px or wider. |
+| Wordmark with tagline | `sedna-wordmark-tagline-on-dark.svg` | 240 px or wider. |
+| Social sharing | [Social image](../applications/sedna-social-1200x630.png) | 1200 × 630. |
+| Avatar | [Dark avatar](../applications/sedna-avatar-dark.png) | 1024 × 1024 with a centered symbol. |
+| Icons | `../applications/sedna-icon-*.png` and `../applications/sedna-favicon.ico` | Size-specific artwork. |
 
-Os SVGs de logo são transparentes. Os PNGs de ícones e aplicações têm fundo.
+Logo SVGs have transparent backgrounds. The icon and application PNGs include backgrounds.
 
-## Cores
+## Color
 
-Preserve os tokens existentes do produto. Estes valores foram extraídos deles:
+- `background` and `stage` use `#020305`.
+- `foreground` uses `#ECEEF2`.
+- `primary` uses `#C2462C`.
+- `primaryText` uses `#E0694A`.
+- `muted` uses `#7E8595`.
 
-- `background` e `stage`: `#020305`
-- `foreground`: `#ECEEF2`
-- `primary`: `#C2462C`
-- `primaryText`: `#E0694A`
-- `muted`: `#7E8595`
+Use `primaryText` for highlighted text on Void and `primary` for the red point in the logo. Use the logo as a static brand mark. Keep the cover graphics in communication materials.
 
-Use `primaryText` para textos destacados sobre Void. O ponto vermelho da marca usa `primary`. A marca é uma assinatura estática, não um indicador de carregamento ou de detecção.
+## Typography
 
-Os símbolos em marca d'água das capas são grafismos de comunicação. Não devem ser inseridos em imagens científicas ou usados como estrelas decorativas na ferramenta.
+- Use IBM Plex Sans 300, 400, 500, and 600 for text.
+- Use IBM Plex Mono 400 and 500 for dates, coordinates, and values.
+- Use the outlined logo files to preserve the original lettering.
+- Keep the licenses when distributing the included Latin font subsets, which cover English and Portuguese.
 
-## Tipografia
+## Accessibility and behavior
 
-- IBM Plex Sans 300, 400, 500 e 600 para textos.
-- IBM Plex Mono 400 e 500 para datas, coordenadas e valores.
-- As letras dos logos já estão em curvas. Não dependem das fontes instaladas.
-- O subconjunto Latin incluído atende português e inglês. Mantenha as licenças ao redistribuir fontes.
+- Use `alt="SEDNA"` for a standalone logo. Use empty alt text for a decorative symbol beside the name in the same link.
+- Preserve the SVG aspect ratio and provide dimensions to prevent layout shifts.
+- Use the micro symbol for a 16 px icon.
+- Keep the logo static in the viewer and preserve the existing science colors, flags, catalogs, frame scaling, and playback between observation epochs.
 
-## Acessibilidade e comportamento
+## Copy
 
-- Usar `alt="SEDNA"` no logo. Quando o nome já estiver presente no mesmo link, tratar o símbolo como decorativo para não duplicar a leitura.
-- SVGs possuem viewBox e tamanho intrínseco. Preserve a proporção, forneça dimensões e evite saltos no carregamento.
-- O ícone micro foi desenhado especificamente para redução. Não force o símbolo completo a 16 px.
-- Não animar a marca continuamente dentro do visualizador. A atenção deve ficar na comparação entre observações.
-- O kit não altera cores de mapas científicos, flags, catálogos, a escala dos quadros ou a reprodução entre épocas.
+The project name is **SEDNA**.
 
-## Texto
+The tagline is **Explore the Unseen.**
 
-Nome: **SEDNA**
+Suggested short description: **Explore how astronomical objects change over time.**
 
-Tagline: **Explore the Unseen.**
+The identity refers to Sedna’s identification through its movement across three images taken on November 14, 2003. The orbital geometry is symbolic.
 
-Descrição breve sugerida: **Explore how astronomical objects change over time.**
+## Integration checks
 
-A narrativa histórica remete à identificação de Sedna pelo deslocamento em três imagens de 14.11.2003. A geometria do logo é simbólica, sem escala física. A marca não promete confirmar a existência ou descobrir o Planeta Nove.
-
-## Verificação após integrar
-
-Conferir o logo em cabeçalho desktop e mobile, avatar circular, favicon a 16 e 32 px e prévia de compartilhamento. Verificar que o nome não foi deformado, que a tagline não ficou pequena demais e que o logo não se sobrepõe aos dados astronômicos. Os cenários claros deste kit não solicitam um novo tema para o aplicativo.
+Review the desktop and mobile headers, circular avatar, 16 px and 32 px favicons, and social preview. Check that the wordmark keeps its proportions, the tagline remains legible, and the logo sits clear of the astronomical data.

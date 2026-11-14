@@ -98,6 +98,17 @@ a { color: inherit; }
 .movers li .text { margin-left: auto; color: var(--ice); }
 .movers li .text:hover { color: var(--fg); }
 .movers .sub { color: var(--muted); font-size: 12px; }
+.start h2.eyebrow { margin: 14px 0 -8px; }
+.examples.missions strong .mono { color: var(--red-text); margin-right: 8px; }
+.coach { width: 100%; max-width: 620px; display: grid; gap: 6px; padding: 10px 0 2px; border-top: 1px solid var(--line); }
+.coach-head { display: flex; align-items: center; gap: 6px 14px; flex-wrap: wrap; font-size: 13px; }
+.coach-head strong { font-weight: 500; color: var(--fg); }
+.coach-head .text { margin-left: auto; }
+.coach-dots { list-style: none; display: flex; gap: 6px; margin: 0; padding: 0; }
+.coach-dots li { width: 6px; height: 6px; border-radius: 50%; border: 1px solid var(--muted); }
+.coach-dots li.done { background: var(--muted-strong); border-color: var(--muted-strong); }
+.coach-dots li.now { background: var(--red-text); border-color: var(--red-text); }
+.coach-text { margin: 0; font-size: 15px; line-height: 23px; color: var(--fg); }
 .text.ice { color: var(--ice); }
 .text.ice:hover { color: var(--fg); }
 .measure { width: 100%; max-width: 620px; }

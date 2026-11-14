@@ -1,12 +1,20 @@
 // The distance focus, told in three steps: watch a point walk among the stars,
 // turn one knob until it snaps into focus, then check the distance against JPL Horizons.
 // Code written with AI assistance (Claude); see AI_USAGE.md.
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ApiError, fetchFocus, fetchFocusAt, type Focus, type Target } from "./lib/api";
 import { renderFrame } from "./lib/render";
 
-type Props = { body: Target | null; seed: { ra: number; dec: number; mjd: number } | null; controls: Target[]; onOpen: (t: Target) => void };
-type Step = "watch" | "focus" | "check";
+export type FocusStep = "watch" | "focus" | "check";
+type Step = FocusStep;
+type Props = {
+  body: Target | null;
+  seed: { ra: number; dec: number; mjd: number } | null;
+  controls: Target[];
+  onOpen: (t: Target) => void;
+  onProgress?: (p: { step: FocusStep; revealed: boolean }) => void; // for guided missions
+  header?: ReactNode; // shown above the steps, e.g. a mission coach
+};
 
 const CONFIDENCE = { clear: "Clear focus", uncertain: "Uncertain focus", none: "No focus" } as const;
 const STEPS: { id: Step; label: string }[] = [
@@ -16,7 +24,7 @@ const STEPS: { id: Step; label: string }[] = [
 ];
 const FILM_LIMITS = { lo: -0.8, hi: 12 };
 
-export default function FocusPanel({ body, seed, controls, onOpen }: Props) {
+export default function FocusPanel({ body, seed, controls, onOpen, onProgress, header }: Props) {
   const [visit, setVisit] = useState(0);
   const [data, setData] = useState<Focus | null>(null);
   const [status, setStatus] = useState<{ kind: "idle" | "loading" | "ready" | "error"; message?: string }>({ kind: "idle" });
@@ -29,6 +37,7 @@ export default function FocusPanel({ body, seed, controls, onOpen }: Props) {
   const sweep = useRef<number | null>(null);
 
   useEffect(() => setVisit(0), [body?.id]);
+  useEffect(() => onProgress?.({ step, revealed }), [step, revealed, onProgress]);
 
   useEffect(() => {
     if (!body && !seed) return;
@@ -154,6 +163,7 @@ export default function FocusPanel({ body, seed, controls, onOpen }: Props) {
 
   return (
     <section className="stage-wrap focus">
+      {header}
       <div className="steps" role="tablist" aria-label="Steps">
         {STEPS.map((s) => (
           <button key={s.id} type="button" role="tab" className="opt" aria-selected={step === s.id} aria-pressed={step === s.id} disabled={!ready || (s.id === "check" && !revealed)} onClick={() => go(s.id)}>

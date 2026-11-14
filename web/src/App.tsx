@@ -3,10 +3,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import BrightnessPanel from "./BrightnessPanel";
 import FilmPanel, { type Seed } from "./FilmPanel";
-import FocusPanel from "./FocusPanel";
+import FocusPanel, { type FocusStep } from "./FocusPanel";
+import MissionCoach from "./MissionCoach";
 import MoversNote, { type MoversState } from "./MoversNote";
 import { ApiError, fetchFocus, fetchGaia, fetchHealth, fetchStack, fetchTargets, type GaiaSource, type Stack, type Target } from "./lib/api";
 import { formatSexagesimal, gridToSky, mjdToYear, parseTarget, skyToGrid } from "./lib/coords";
+import { advance, missionById, MISSIONS, type Mission, type MissionContext } from "./lib/missions";
 import { fetchMovers } from "./lib/movers";
 import { differenceLimit, mean, renderDifference, renderFrame, sharedLimits, subtract } from "./lib/render";
 
@@ -19,9 +21,9 @@ const MODES: { id: Mode; label: string }[] = [
   { id: "focus", label: "Distance focus" },
 ];
 // fv: single-exposure visit (0-based; 1-based in the URL); ft: open the single exposures at this MJD
-// bp: brightness lens on a built-in target id, or on a point "ra,dec"
-type View = { ra: number; dec: number; fov: number; det: number; mode: Mode; target: string | null; gaia: boolean; invert: boolean; fps: number; fv: number; ft: number | null; bp: string | null };
-const VIEW_DEFAULTS = { fov: 6, det: 2, mode: "blink" as Mode, gaia: true, invert: false, fps: 2, fv: 0, ft: null, bp: null };
+// bp: brightness lens on a built-in target id, or on a point "ra,dec"; mission: guided mission id
+type View = { ra: number; dec: number; fov: number; det: number; mode: Mode; target: string | null; gaia: boolean; invert: boolean; fps: number; fv: number; ft: number | null; bp: string | null; mission: string | null };
+const VIEW_DEFAULTS = { fov: 6, det: 2, mode: "blink" as Mode, gaia: true, invert: false, fps: 2, fv: 0, ft: null, bp: null, mission: null };
 
 // from the pipeline's wavelength maps (service/sedna/archive/wavelength.py), rounded outward
 const DETECTORS = [
@@ -44,7 +46,7 @@ function readView(): View | null {
   const mode = MODES.some((m) => m.id === p.get("mode")) ? (p.get("mode") as Mode) : "blink";
   const fv = Math.max(0, Math.min(20, Math.round(Number(p.get("visit")) || 1) - 1));
   const ft = p.has("t") && Number.isFinite(Number(p.get("t"))) ? Number(p.get("t")) : null;
-  return { ra, dec, fov, det, mode, target: p.get("target"), gaia: p.get("gaia") !== "0", invert: p.get("invert") === "1", fps: Number(p.get("speed")) || 2, fv, ft, bp: p.get("bright") };
+  return { ra, dec, fov, det, mode, target: p.get("target"), gaia: p.get("gaia") !== "0", invert: p.get("invert") === "1", fps: Number(p.get("speed")) || 2, fv, ft, bp: p.get("bright"), mission: missionById(p.get("mission"))?.id ?? null };
 }
 
 function writeView(v: View, push: boolean) {
@@ -61,6 +63,7 @@ function writeView(v: View, push: boolean) {
   if (v.mode === "film" && v.fv > 0) p.set("visit", String(v.fv + 1));
   if (v.mode === "film" && v.ft !== null) p.set("t", v.ft.toFixed(5));
   if (v.bp) p.set("bright", v.bp);
+  if (v.mission) p.set("mission", v.mission);
   const url = `${location.pathname}?${p}`;
   if (push) history.pushState(null, "", url);
   else history.replaceState(null, "", url);
@@ -84,6 +87,12 @@ export default function App() {
   const [seed, setSeed] = useState<Seed | null>(null);
   const [movers, setMovers] = useState<MoversState>({ kind: "loading" });
   const [clickSky, setClickSky] = useState<{ ra: number; dec: number; star: boolean } | null>(null);
+  const [missionStep, setMissionStep] = useState(0);
+  // visits shown in Blink, tied to one loaded stack and detector so a new target never inherits them
+  const [stackGen, setStackGen] = useState(0);
+  const [seen, setSeen] = useState<{ key: string; visits: Set<number> }>({ key: "", visits: new Set() });
+  const [focusProgress, setFocusProgress] = useState<{ step: FocusStep; revealed: boolean } | null>(null);
+  const onFocusProgress = useCallback((p: { step: FocusStep; revealed: boolean }) => setFocusProgress(p), []);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const update = useCallback((patch: Partial<View>, push = false) => {
@@ -117,6 +126,7 @@ export default function App() {
     fetchStack(view.ra, view.dec, view.fov, ctrl.signal)
       .then((s) => {
         setStack(s);
+        setStackGen((g) => g + 1);
         setStatus({ kind: "ready" });
         setEpoch(0);
       })
@@ -185,15 +195,15 @@ export default function App() {
     return () => removeEventListener("keydown", onKey);
   }, [frames.length, update]);
 
-  function go(ra: number, dec: number, targetId: string | null) {
+  function go(ra: number, dec: number, targetId: string | null, extra: Partial<View> = {}) {
     const base = view ?? VIEW_DEFAULTS;
-    const next: View = { ...base, mode: base.mode === "focus" ? "blink" : base.mode, ra, dec, target: targetId, fv: 0, ft: null, bp: null };
+    const next: View = { ...base, mode: base.mode === "focus" ? "blink" : base.mode, ra, dec, target: targetId, fv: 0, ft: null, bp: null, mission: null, ...extra };
     writeView(next, true);
     setView(next);
     setInputError(null);
   }
 
-  async function openTarget(t: Target) {
+  async function openTarget(t: Target, extra: Partial<View> = {}) {
     setInput(t.name);
     if (t.kind === "distance") {
       // a distant body has no fixed field: centre on where it was when the focus is seeded
@@ -206,7 +216,7 @@ export default function App() {
       } catch {
         /* fall back to the approximate position; the focus panel reports the error */
       }
-      const next: View = { ...(view ?? VIEW_DEFAULTS), ra, dec, target: t.id, mode: "focus", fv: 0, ft: null, bp: null };
+      const next: View = { ...(view ?? VIEW_DEFAULTS), ra, dec, target: t.id, mode: "focus", fv: 0, ft: null, bp: null, mission: null, ...extra };
       writeView(next, true);
       setView(next);
       setInputError(null);
@@ -216,8 +226,16 @@ export default function App() {
     const years = 2025.9 - t.epoch;
     const dec = t.dec + ((t.pmDec ?? 0) * years) / 3600;
     const ra = t.ra + ((t.pmRa ?? 0) * years) / 3600 / Math.cos((t.dec * Math.PI) / 180);
-    go(ra, dec, t.id);
-    if (t.id === "wise0855") update({ det: 6 });
+    go(ra, dec, t.id, { ...(t.id === "wise0855" ? { det: 6 } : {}), ...extra });
+  }
+
+  function startMission(m: Mission) {
+    const t = targets.find((x) => x.id === m.target);
+    if (!t) return;
+    setMissionStep(0);
+    setFocusProgress(null);
+    setInput(t.name);
+    openTarget(t, { mode: m.start.mode, det: m.start.det, fov: m.start.fov, mission: m.id });
   }
 
   function submit(e: React.FormEvent) {
@@ -292,6 +310,32 @@ export default function App() {
     }
   }
 
+  // guided missions: which visits have been shown in Blink on this detector, and where the person is
+  const seenKey = stack && status.kind === "ready" ? `${stackGen}|${view?.det}` : "";
+  useEffect(() => {
+    if (!seenKey || view?.mode !== "blink" || !frames.length) return;
+    setSeen((s) => (s.key !== seenKey ? { key: seenKey, visits: new Set([epoch]) } : s.visits.has(epoch) ? s : { key: s.key, visits: new Set(s.visits).add(epoch) }));
+  }, [epoch, view?.mode, frames.length, seenKey]);
+  const mission = missionById(view?.mission ?? null);
+  const missionContext = useMemo<MissionContext>(
+    () => ({
+      mode: view?.mode ?? "blink",
+      det: view?.det ?? 2,
+      target: view?.target ?? null,
+      seenAllVisits: seenKey !== "" && seen.key === seenKey && frames.length >= 2 && frames.every((_, i) => seen.visits.has(i)),
+      pickedMotionArcsecYr: picked ? Math.hypot(picked.pmRa ?? 0, picked.pmDec ?? 0) / 1000 : null,
+      focusStep: focusProgress?.step ?? null,
+      focusRevealed: focusProgress?.revealed ?? false,
+    }),
+    [view?.mode, view?.det, view?.target, frames, seen, seenKey, picked, focusProgress],
+  );
+  useEffect(() => {
+    if (mission) setMissionStep((s) => advance(mission, s, missionContext));
+  }, [mission, missionContext]);
+  const coach = mission ? (
+    <MissionCoach mission={mission} step={missionStep} onAction={(patch) => update(patch, true)} onNext={startMission} onExit={() => update({ mission: null }, true)} />
+  ) : null;
+
   const lens = useMemo(() => {
     if (!view?.bp) return null;
     const t = targets.find((x) => x.id === view.bp);
@@ -344,7 +388,19 @@ export default function App() {
       {!view && (
         <section className="start">
           <h1>Watch the infrared sky change.</h1>
-          <p>SEDNA shows NASA SPHEREx images of any patch of sky as a short sequence in time, so anything that moved or changed stands out. Type coordinates above, or start with one of these.</p>
+          <p>SEDNA shows NASA SPHEREx images of any patch of sky as a short sequence in time, so anything that moved or changed stands out. Type coordinates above, or start with a one-minute mission.</p>
+          <h2 className="eyebrow">One-minute missions</h2>
+          <ul className="examples missions">
+            {MISSIONS.map((m, i) => (
+              <li key={m.id}>
+                <button type="button" onClick={() => startMission(m)} disabled={!targets.length}>
+                  <strong><span className="mono">{i + 1}</span> {m.title}</strong>
+                  <span>{m.teaser}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <h2 className="eyebrow">The challenge targets</h2>
           <ul className="examples">
             {targets.map((t) => (
               <li key={t.id}>
@@ -385,7 +441,14 @@ export default function App() {
           </aside>
 
           {view.mode === "focus" ? (
-            <FocusPanel body={target?.kind === "distance" ? target : null} seed={target?.kind === "distance" ? null : seed} controls={targets.filter((t) => t.kind === "distance")} onOpen={openTarget} />
+            <FocusPanel
+              body={target?.kind === "distance" ? target : null}
+              seed={target?.kind === "distance" ? null : seed}
+              controls={targets.filter((t) => t.kind === "distance")}
+              onOpen={openTarget}
+              onProgress={onFocusProgress}
+              header={coach}
+            />
           ) : view.mode === "film" ? (
             <FilmPanel
               ra={view.ra}
@@ -455,6 +518,7 @@ export default function App() {
               <span>{readout ?? "Point at the sky to read its position and value"}</span>
               <span>North up, east left · asinh, one stretch for all dates</span>
             </div>
+            {coach}
             {picked && (
               <p className="verdict" role="status">
                 <strong>Known star.</strong> Gaia DR3 {picked.id}, G = {picked.g?.toFixed(1) ?? "?"}. Catalogue motion {(Math.hypot(picked.pmRa ?? 0, picked.pmDec ?? 0) / 1000).toFixed(2)}″ per year:

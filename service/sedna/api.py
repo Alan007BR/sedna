@@ -18,6 +18,7 @@ from astropy.time import Time
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
+from .archive.gaia import cone as gaia_cone
 from .archive.skybot import known_object
 from .archive.skyindex import SkyIndex
 from .science import parallax
@@ -141,27 +142,11 @@ def position(target: str, mjd: float):
 def gaia(ra: float, dec: float, fov: float = 6.0):
     """Gaia DR3 sources in the field with proper motions, for the overlay and the known-star verdict."""
     radius = fov / 60 / 2 * 1.5
-    adql = (
-        "SELECT TOP 150 source_id, ra, dec, pmra, pmdec, parallax, phot_g_mean_mag FROM gaiadr3.gaia_source "
-        f"WHERE 1=CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', {ra}, {dec}, {radius})) AND phot_g_mean_mag < 16.5 ORDER BY phot_g_mean_mag"
-    )
     try:
-        r = requests.get("https://gea.esac.esa.int/tap-server/tap/sync", params={"REQUEST": "doQuery", "LANG": "ADQL", "FORMAT": "json", "QUERY": adql}, timeout=30)
-        r.raise_for_status()
-        body = r.json()
+        rows = gaia_cone(ra, dec, radius, g_max=16.5, limit=150)  # cached on disk after the first answer
     except Exception as err:
         raise HTTPException(503, detail={"code": "CATALOG_UNAVAILABLE", "message": "The Gaia archive did not answer.", "cause": repr(err)[:120]})
-    cols = [c["name"] for c in body["metadata"]]
-    rows = [dict(zip(cols, row)) for row in body["data"]]
-    return {
-        "schemaVersion": SCHEMA,
-        "catalog": "Gaia DR3",
-        "refEpoch": 2016.0,
-        "sources": [
-            {"id": str(s["source_id"]), "ra": s["ra"], "dec": s["dec"], "pmRa": s["pmra"], "pmDec": s["pmdec"], "parallax": s["parallax"], "g": s["phot_g_mean_mag"]}
-            for s in rows
-        ],
-    }
+    return {"schemaVersion": SCHEMA, "catalog": "Gaia DR3", "refEpoch": 2016.0, "sources": rows}
 
 
 @app.get("/api/parallax-ruler")

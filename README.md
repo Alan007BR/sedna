@@ -10,6 +10,7 @@ Named after 90377 Sedna, found on 14 November 2003 by comparing images of the sa
 
 ## What it does
 
+- **Three one-minute missions** for a first visit: watch Barnard's Star walk, see WISE 0855 appear only in the infrared, and measure Makemake's distance with the focus knob. Each step advances only when the person has done it, every claim is a measured result, and a mission can be shared as a link (`?mission=walk`).
 - **Any position, fast.** SEDNA keeps its own index of every SPHEREx exposure (272,963 detector-1 frames, April 2025 to October 2026), built from the public archive bucket. A lookup takes about 40 ms and does not depend on the archive's search services.
 - **Aligned visits.** Exposures are resampled onto one north-up grid and averaged per visit and detector, with one brightness stretch for all dates.
 - **Compare.** Blink, difference (later minus earlier) and sum; the six detectors from 0.75 to 5 µm; fields of view from 4 to 15 arcmin.

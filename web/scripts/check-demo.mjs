@@ -124,6 +124,28 @@ for (const vp of [{ width: 390, height: 844 }, { width: 768, height: 1024 }, { w
   }, vp);
 }
 
+for (const vp of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
+  await check(`sky view at ${vp.width} px: map, HUD clear of the data, Esc leaves`, async (page) => {
+    await page.goto(`${APP}/?ra=269.44629&dec=4.76792&fov=4&band=2&mode=blink&target=barnard`);
+    await sky(page);
+    await page.keyboard.press("f");
+    await page.waitForSelector(".sky .sky-window", { timeout: T });
+    await page.waitForTimeout(600);
+    const hit = await page.evaluate(() => {
+      const box = (s) => { const e = document.querySelector(s); if (!e) return null; const r = e.getBoundingClientRect(); return r.width ? r : null; };
+      const win = box(".sky-frame");
+      return [".hud-tl", ".hud-caption", ".hud-tr", ".hud-right", ".hud-left", ".hud-bl", ".hud-bc", ".hud-br"].filter((s) => { const h = box(s); return h && h.left < win.right && h.right > win.left && h.top < win.bottom && h.bottom > win.top; });
+    });
+    if (hit.length) throw new Error(`HUD over the data: ${hit.join(", ")}`);
+    await page.screenshot({ path: join(EVIDENCE, `demo-sky-${vp.width}.png`) });
+    const zoom = await page.locator(".hud-zoom").innerText();
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(300);
+    if (await page.locator(".sky").count()) throw new Error("Esc did not leave the sky view");
+    return `opening zoom ${zoom}`;
+  }, vp);
+}
+
 await check("embed in a 400 x 300 iframe", async (page) => {
   const src = `${APP}/embed/?ra=269.44629&dec=4.76792&fov=4&band=2&mode=blink&target=barnard&gaia=0`;
   await page.setContent(`<body style="margin:24px;background:#888"><iframe src="${src}" width="400" height="300" style="border:0" title="SEDNA"></iframe></body>`);

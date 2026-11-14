@@ -13,7 +13,8 @@ import { advance, missionById, MISSIONS, type Mission, type MissionContext } fro
 import { fetchMovers } from "./lib/movers";
 import { fetchRuler } from "./lib/prediction";
 import { onSourceChange, type Active } from "./lib/transport";
-import { differenceLimit, mean, renderDifference, renderFrame, sharedLimits, subtract } from "./lib/render";
+import { paintStack, sharedLimits, type ViewMode } from "./lib/render";
+import SkyView from "./SkyView";
 
 type Mode = "blink" | "diff" | "sum" | "film" | "focus" | "follow";
 const MODES: { id: Mode; label: string }[] = [
@@ -25,8 +26,8 @@ const MODES: { id: Mode; label: string }[] = [
 ];
 // fv: single-exposure visit (0-based; 1-based in the URL); ft: open the single exposures at this MJD
 // bp: brightness lens on a built-in target id, or on a point "ra,dec"; mission: guided mission id; ruler: parallax ruler on
-type View = { ra: number; dec: number; fov: number; det: number; mode: Mode; target: string | null; gaia: boolean; invert: boolean; fps: number; fv: number; ft: number | null; bp: string | null; mission: string | null; ruler: boolean };
-const VIEW_DEFAULTS = { fov: 6, det: 2, mode: "blink" as Mode, gaia: true, invert: false, fps: 2, fv: 0, ft: null, bp: null, mission: null, ruler: false };
+type View = { ra: number; dec: number; fov: number; det: number; mode: Mode; target: string | null; gaia: boolean; invert: boolean; fps: number; fv: number; ft: number | null; bp: string | null; mission: string | null; ruler: boolean; sky: boolean };
+const VIEW_DEFAULTS = { fov: 6, det: 2, mode: "blink" as Mode, gaia: true, invert: false, fps: 2, fv: 0, ft: null, bp: null, mission: null, ruler: false, sky: false };
 
 // from the pipeline's wavelength maps (service/sedna/archive/wavelength.py), rounded outward
 const DETECTORS = [
@@ -53,7 +54,7 @@ function readView(): View | null {
   const mode = MODES.some((m) => m.id === p.get("mode")) || p.get("mode") === "follow" ? (p.get("mode") as Mode) : "blink";
   const fv = Math.max(0, Math.min(20, Math.round(Number(p.get("visit")) || 1) - 1));
   const ft = p.has("t") && Number.isFinite(Number(p.get("t"))) ? Number(p.get("t")) : null;
-  return { ra, dec, fov, det, mode, target: p.get("target"), gaia: p.get("gaia") !== "0", invert: p.get("invert") === "1", fps: Number(p.get("speed")) || 2, fv, ft, bp: p.get("bright"), mission: missionById(p.get("mission"))?.id ?? null, ruler: p.get("ruler") === "1" };
+  return { ra, dec, fov, det, mode, target: p.get("target"), gaia: p.get("gaia") !== "0", invert: p.get("invert") === "1", fps: Number(p.get("speed")) || 2, fv, ft, bp: p.get("bright"), mission: missionById(p.get("mission"))?.id ?? null, ruler: p.get("ruler") === "1", sky: p.get("view") === "sky" };
 }
 
 function writeView(v: View, push: boolean) {
@@ -72,6 +73,7 @@ function writeView(v: View, push: boolean) {
   if (v.bp) p.set("bright", v.bp);
   if (v.mission) p.set("mission", v.mission);
   if (v.ruler) p.set("ruler", "1");
+  if (v.sky) p.set("view", "sky");
   const url = `${location.pathname}?${p}`;
   if (push) history.pushState(null, "", url);
   else history.replaceState(null, "", url);
@@ -106,6 +108,14 @@ export default function App() {
   const [focusProgress, setFocusProgress] = useState<{ step: FocusStep; revealed: boolean } | null>(null);
   const onFocusProgress = useCallback((p: { step: FocusStep; revealed: boolean }) => setFocusProgress(p), []);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [stagePx, setStagePx] = useState(560);
+  const stageObserver = useRef<ResizeObserver | null>(null);
+  const stageRef = useCallback((el: HTMLDivElement | null) => {
+    stageObserver.current?.disconnect();
+    if (!el) return;
+    stageObserver.current = new ResizeObserver(([entry]) => setStagePx(entry.contentRect.width || 560));
+    stageObserver.current.observe(el);
+  }, []);
 
   const update = useCallback((patch: Partial<View>, push = false) => {
     setView((v) => {
@@ -161,6 +171,10 @@ export default function App() {
   }, [queryKey]);
 
   const target = useMemo(() => targets.find((t) => t.id === view?.target) ?? null, [targets, view?.target]);
+  useEffect(() => {
+    if (target && view && input === `${view.ra.toFixed(5)} ${view.dec.toFixed(5)}`) setInput(target.name);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [target]);
   const frames = useMemo(() => (stack && view ? stack.frames.filter((f) => f.detector === view.det).sort((a, b) => a.visit - b.visit) : []), [stack, view]);
   const limits = useMemo(() => (frames.length ? sharedLimits(frames.map((f) => f.image)) : null), [frames]);
   const current = frames[Math.min(epoch, frames.length - 1)];
@@ -173,6 +187,11 @@ export default function App() {
     return () => clearInterval(id);
   }, [playing, view?.mode, view?.fps, frames.length]);
 
+  // the pixels on screen; the sky view paints the same ones
+  const frameImages = useMemo(() => frames.map((f) => f.image), [frames]);
+  const viewMode: ViewMode = view?.mode === "diff" || view?.mode === "sum" ? view.mode : "blink";
+  const canSky = !!view && (view.mode === "blink" || view.mode === "diff" || view.mode === "sum");
+
   // draw
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -182,17 +201,11 @@ export default function App() {
     canvas.height = size;
     const ctx = canvas.getContext("2d")!;
     const out = ctx.createImageData(size, size);
-    if (view.mode === "diff" && frames.length >= 2) {
-      const diff = subtract(frames[frames.length - 1].image, frames[0].image);
-      renderDifference(diff, size, out, differenceLimit(diff));
-    } else if (view.mode === "sum") {
-      renderFrame(mean(frames.map((f) => f.image)), size, out, { limits, softening: 10, invert: view.invert });
-    } else if (current) {
-      renderFrame(current.image, size, out, { limits, softening: 10, invert: view.invert });
-    }
+    paintStack(frameImages, epoch, viewMode, size, out, limits, view.invert);
     ctx.putImageData(out, 0, 0);
-  }, [stack, view, frames, limits, current]);
+  }, [stack, view, frameImages, limits, epoch, viewMode]);
 
+  const viewSky = !!view?.sky;
   // keyboard
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -204,10 +217,11 @@ export default function App() {
       else if (e.key === "2") update({ mode: "diff" });
       else if (e.key === "3") update({ mode: "sum" });
       else if (e.key === "4") update({ mode: "focus" });
+      else if ((e.key === "f" || e.key === "F") && canSky && !viewSky) update({ sky: true }, true);
     };
     addEventListener("keydown", onKey);
     return () => removeEventListener("keydown", onKey);
-  }, [frames.length, update]);
+  }, [frames.length, update, canSky, viewSky]);
 
   function go(ra: number, dec: number, targetId: string | null, extra: Partial<View> = {}) {
     const base = view ?? VIEW_DEFAULTS;
@@ -428,8 +442,16 @@ export default function App() {
               )}
             </div>
   );
+  // marks keep their screen size at every field of view: ticks 9 px long with a 9 px gap, circles 7 px
+  const unit = size / Math.max(stagePx, 1); // grid units per screen pixel
+  const ticks = (c: { x: number; y: number }) => {
+    const gap = Math.max(9 * unit, 1.6);
+    const len = 9 * unit;
+    return [[-1, 0], [1, 0], [0, -1], [0, 1]].map(([dx, dy]) => [c.x + dx * gap, c.y + dy * gap, c.x + dx * (gap + len), c.y + dy * (gap + len)]);
+  };
   const stageEl = !view ? null : (
             <div
+              ref={stageRef}
               className="stage"
               role="img"
               aria-label={current ? `SPHEREx image, detector ${view.det}, ${dateLabel(current.start)}` : "SPHEREx image"}
@@ -444,23 +466,23 @@ export default function App() {
               {status.kind === "ready" && frames.length > 0 && stack && (
                 <svg viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
                   {gaiaMarks.map((m) => (
-                    <circle key={m.s.id} cx={m.x} cy={m.y} r={1.5} fill="none" stroke={picked?.id === m.s.id ? "var(--fg)" : "var(--ice)"} strokeWidth={shiftPx(m.s) > 0.3 ? 0.2 : 0.1} opacity={shiftPx(m.s) > 0.3 ? 0.95 : 0.55} />
+                    <circle key={m.s.id} cx={m.x} cy={m.y} r={Math.max(7 * unit, 1.5)} fill="none" stroke={picked?.id === m.s.id ? "var(--fg)" : "var(--ice)"} strokeWidth={shiftPx(m.s) > 0.3 ? 1.4 : 1} vectorEffect="non-scaling-stroke" opacity={shiftPx(m.s) > 0.3 ? 0.95 : 0.55} />
                   ))}
                   {view.ruler && ruler.kind === "ready" && rulerAnchor && (
                     <RulerMarks ruler={ruler.data} anchor={toSvg(rulerAnchor.ra, rulerAnchor.dec)} size={size} scale={scale} />
                   )}
                   {lensMark && (
-                    <g stroke="var(--ice)" strokeLinecap="round" strokeWidth={0.2}>
-                      {[[-3.2, 0, -1.8, 0], [1.8, 0, 3.2, 0], [0, -3.2, 0, -1.8], [0, 1.8, 0, 3.2]].map(([a, b, c, d], i) => (
-                        <line key={i} x1={lensMark.x + a} y1={lensMark.y + b} x2={lensMark.x + c} y2={lensMark.y + d} />
+                    <g stroke="var(--ice)" strokeLinecap="round" strokeWidth={1.6} vectorEffect="non-scaling-stroke">
+                      {ticks(lensMark).map(([x1, y1, x2, y2], i) => (
+                        <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} vectorEffect="non-scaling-stroke" />
                       ))}
                     </g>
                   )}
                   {predicted && (
                     <g stroke="var(--red-text)" strokeLinecap="round">
-                      <polyline points={predicted.pts.map((p) => `${p.x},${p.y}`).join(" ")} fill="none" strokeWidth={0.14} strokeDasharray="0.6 0.6" />
-                      {[[-3.2, 0, -1.8, 0], [1.8, 0, 3.2, 0], [0, -3.2, 0, -1.8], [0, 1.8, 0, 3.2]].map(([a, b, c, d], i) => (
-                        <line key={i} x1={predicted.now.x + a} y1={predicted.now.y + b} x2={predicted.now.x + c} y2={predicted.now.y + d} strokeWidth={0.24} />
+                      <polyline points={predicted.pts.map((p) => `${p.x},${p.y}`).join(" ")} fill="none" strokeWidth={1.2} vectorEffect="non-scaling-stroke" strokeDasharray={`${4 * unit} ${4 * unit}`} />
+                      {ticks(predicted.now).map(([x1, y1, x2, y2], i) => (
+                        <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} strokeWidth={1.8} vectorEffect="non-scaling-stroke" />
                       ))}
                     </g>
                   )}
@@ -515,17 +537,57 @@ export default function App() {
     );
   }
 
+  const skyEl =
+    view?.sky && canSky && stack && status.kind === "ready" && frames.length > 0 && limits && current ? (
+      <SkyView
+        size={size}
+        pixelArcsec={scale}
+        center={stack.center}
+        frames={frameImages}
+        epoch={epoch}
+        mode={viewMode}
+        limits={limits}
+        invert={view.invert}
+        title={target?.name ?? `${view.ra.toFixed(4)} ${view.dec.toFixed(4)}`}
+        caption={[
+          view.mode === "diff" && frames.length > 1 ? `${dateLabel(frames[frames.length - 1].start)} − ${dateLabel(frames[0].start)}` : view.mode === "sum" ? `Sum of ${frames.length} visits` : dateLabel(current.start),
+          `D${view.det} · ${DETECTORS[view.det - 1].range}`,
+          `${view.mode === "blink" ? current.exposures : frames.reduce((n, f) => n + f.exposures, 0)} exp.`,
+        ]}
+        windowLabel={`SPHEREx · ${view.fov}′ · ${frames.length} ${frames.length === 1 ? "epoch" : "epochs"}`}
+        det={view.det}
+        detectors={DETECTORS}
+        gaia={view.gaia ? gaiaMarks.map((m) => ({ id: m.s.id, x: m.x, y: m.y, fast: shiftPx(m.s) > 0.3 })) : null}
+        predicted={predicted}
+        ticks={frames.map((f, i) => {
+          const first = visitOf(frames[0].visit)?.midMjd ?? 0;
+          const last = visitOf(frames[frames.length - 1].visit)?.midMjd ?? 1;
+          const mid = visitOf(f.visit)?.midMjd ?? first;
+          return { key: String(f.visit), label: dateLabel(f.start), left: frames.length > 1 ? 6 + (88 * (mid - first)) / (last - first) : 50, current: i === epoch && view.mode === "blink", onClick: () => { setEpoch(i); update({ mode: "blink" }); } };
+        })}
+        playing={playing}
+        fps={view.fps}
+        spectrumQuery={{ ra: view.ra, dec: view.dec, target: target && target.kind !== "distance" ? target.id : null }}
+        onPlay={() => setPlaying((v) => !v)}
+        onSpeed={() => update({ fps: view.fps === 1 ? 2 : view.fps === 2 ? 4 : 1 })}
+        onMode={(m) => update({ mode: m })}
+        onDet={(d) => update({ det: d })}
+        onGaia={() => update({ gaia: !view.gaia })}
+        onCopyLink={() => copy("link", location.href)}
+        onExit={() => update({ sky: false }, true)}
+      />
+    ) : null;
+
   return (
     <div className="app">
+      {skyEl}
       <header className="top">
-        <div className="brand" aria-label="SEDNA">
-          <svg width="34" height="14" viewBox="0 0 34 14" aria-hidden="true">
-            <ellipse cx="15" cy="7" rx="14" ry="4.6" fill="none" stroke="var(--line-strong)" strokeWidth="1" />
-            <circle cx="28.4" cy="5.6" r="2.2" fill="var(--red)" />
-            <circle cx="9" cy="7" r="1.2" fill="var(--muted-strong)" />
-          </svg>
-          <span>SEDNA</span>
-        </div>
+        <a className="brand" href={import.meta.env.BASE_URL} aria-label="SEDNA, start page">
+          <picture>
+            <source media="(max-width: 820px)" srcSet={`${import.meta.env.BASE_URL}brand/sedna-wordmark-on-dark.svg`} width={120} height={28} />
+            <img src={`${import.meta.env.BASE_URL}brand/sedna-horizontal-on-dark.svg`} width={180} height={45} alt="SEDNA" />
+          </picture>
+        </a>
         <form className="target" onSubmit={submit}>
           <label htmlFor="target-input" className="sr">Object name or coordinates (Right Ascension and Declination)</label>
           <input
@@ -546,6 +608,12 @@ export default function App() {
         <div className="top-actions">
           {view && (
             <>
+              {canSky && status.kind === "ready" && frames.length > 0 && (
+                <button type="button" className="text full-screen-entry" onClick={() => update({ sky: true }, true)} title="Full screen sky map (F)">
+                  <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 6V2.5H6M10 2.5h3.5V6M2.5 10v3.5H6M13.5 10v3.5H10" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>
+                  Full screen
+                </button>
+              )}
               <button type="button" className="text" onClick={() => copy("link", location.href)}>
                 {copied === "link" ? "Copied" : "Copy link"}
               </button>

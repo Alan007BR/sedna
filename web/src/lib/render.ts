@@ -77,6 +77,50 @@ export function renderDifference(diff: Float32Array, size: number, out: ImageDat
   }
 }
 
+export type ViewMode = "blink" | "diff" | "sum";
+
+/**
+ * The pixels one viewer shows for a stack: the current epoch, the difference last minus first, or the sum.
+ * The void view and the sky view both paint with this, so they always show the same thing.
+ */
+export function paintStack(frames: Float32Array[], epoch: number, mode: ViewMode, size: number, out: ImageData, limits: Limits, invert: boolean) {
+  if (!frames.length) return;
+  if (mode === "diff" && frames.length >= 2) {
+    const diff = subtract(frames[frames.length - 1], frames[0]);
+    renderDifference(diff, size, out, differenceLimit(diff));
+  } else if (mode === "sum") {
+    renderFrame(mean(frames), size, out, { limits, softening: 10, invert });
+  } else {
+    renderFrame(frames[Math.min(epoch, frames.length - 1)], size, out, { limits, softening: 10, invert });
+  }
+}
+
+/**
+ * The sky view's smoked glass: an RGBA image of ``tile`` (size x size, already rendered) mirrored outward
+ * from every edge, ``reach`` copies on each side. Mirroring keeps the edges continuous; it is never data.
+ */
+export function mirrorTiles(tile: Uint8ClampedArray, size: number, reach: number): Uint8ClampedArray<ArrayBuffer> {
+  const span = (2 * reach + 1) * size;
+  const out = new Uint8ClampedArray(new ArrayBuffer(span * span * 4));
+  for (let Y = 0; Y < span; Y++) {
+    const ty = Math.floor(Y / size) - reach;
+    let y = Y % size;
+    if (ty % 2 !== 0) y = size - 1 - y;
+    for (let X = 0; X < span; X++) {
+      const tx = Math.floor(X / size) - reach;
+      let x = X % size;
+      if (tx % 2 !== 0) x = size - 1 - x;
+      const s = (y * size + x) * 4;
+      const o = (Y * span + X) * 4;
+      out[o] = tile[s];
+      out[o + 1] = tile[s + 1];
+      out[o + 2] = tile[s + 2];
+      out[o + 3] = 255;
+    }
+  }
+  return out;
+}
+
 export function subtract(later: Float32Array, earlier: Float32Array): Float32Array {
   const out = new Float32Array(later.length);
   for (let i = 0; i < out.length; i++) out[i] = later[i] - earlier[i];

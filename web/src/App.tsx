@@ -14,6 +14,7 @@ import { formatSexagesimal, gridToSky, mjdToYear, parseTarget, skyToGrid } from 
 import { advance, missionById, MISSIONS, type Mission, type MissionContext } from "./lib/missions";
 import { fetchMovers } from "./lib/movers";
 import { fetchRuler } from "./lib/prediction";
+import { fetchResolve, notFoundMessage, positionAt, unavailableMessage } from "./lib/resolve";
 import { onSourceChange, type Active } from "./lib/transport";
 import { paintStack, sharedLimits, type ViewMode } from "./lib/render";
 import SkyView from "./SkyView";
@@ -94,6 +95,9 @@ export default function App() {
   const [playing, setPlaying] = useState(false);
   const [input, setInput] = useState("");
   const [inputError, setInputError] = useState<string | null>(null);
+  // a typed name being looked up in SIMBAD (through the data service), and a guard against stale answers
+  const [lookup, setLookup] = useState<string | null>(null);
+  const lookupToken = useRef(0);
   const [readout, setReadout] = useState<string | null>(null);
   const [picked, setPicked] = useState<GaiaSource | null>(null);
   const [health, setHealth] = useState<string | null>(null);
@@ -311,7 +315,24 @@ export default function App() {
     const q = parsed.query.toLowerCase().replace(/[^a-z0-9]/g, "");
     const found = targets.find((t) => t.id === q || t.name.toLowerCase().replace(/[^a-z0-9]/g, "").includes(q));
     if (found) return openTarget(found);
-    setInputError(`"${parsed.query}" is not one of the built-in names. Type coordinates, or pick an example below.`);
+    // any other name: SIMBAD, NED or VizieR say where it is (and how fast it moves)
+    const token = ++lookupToken.current;
+    setInputError(null);
+    setLookup(parsed.query);
+    fetchResolve(parsed.query)
+      .then((r) => {
+        if (token !== lookupToken.current) return;
+        setLookup(null);
+        if (!r.found || r.ra == null || r.dec == null) return setInputError(notFoundMessage(parsed.query));
+        const p = positionAt(r);
+        setInput(r.name ?? parsed.query);
+        go(p.ra, p.dec, null);
+      })
+      .catch((err) => {
+        if (token !== lookupToken.current) return;
+        setLookup(null);
+        setInputError(unavailableMessage(err));
+      });
   }
 
   const size = stack?.grid.size ?? 1;
@@ -705,6 +726,7 @@ export default function App() {
         input={input}
         onInput={setInput}
         inputError={inputError}
+        lookup={lookup}
         onSubmit={submit}
         onTarget={(t) => openTarget(t)}
         onMission={startMission}
@@ -737,7 +759,7 @@ export default function App() {
           />
           <button type="submit" className="primary">Load sky</button>
           <p id="target-help" className={inputError ? "help error" : "help"}>
-            {inputError ?? (view ? `${formatSexagesimal(view.ra, view.dec)}  ·  ${view.fov}′ field` : "Decimal degrees or hh:mm:ss ±dd:mm:ss")}
+            {inputError ?? (lookup ? `Looking up "${lookup}" in SIMBAD…` : view ? `${formatSexagesimal(view.ra, view.dec)}  ·  ${view.fov}′ field` : "Decimal degrees or hh:mm:ss ±dd:mm:ss")}
           </p>
         </form>
         <div className="top-actions">

@@ -16,6 +16,7 @@ from pathlib import Path
 import requests
 from astropy.time import Time
 from ..paths import CACHE_DIR
+from .net import session
 
 URL = "https://ssp.imcce.fr/webservices/skybot/api/conesearch.php"
 CACHE = CACHE_DIR / "skybot"
@@ -80,7 +81,7 @@ def cone(ra: float, dec: float, mjd: float, radius_deg: float) -> list[Sighting]
         "-from": "SEDNA",
     }
     try:
-        r = requests.get(URL, params=params, timeout=TIMEOUT)
+        r = session().get(URL, params=params, timeout=TIMEOUT)
     except requests.RequestException as err:
         raise SkybotUnavailable(repr(err)[:160]) from err
     if r.status_code == 204 or (r.ok and not r.text.strip()):

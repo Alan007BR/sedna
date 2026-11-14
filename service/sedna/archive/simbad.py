@@ -15,6 +15,7 @@ from pathlib import Path
 
 import requests
 from ..paths import CACHE_DIR
+from .net import session
 
 CACHE = CACHE_DIR / "simbad"
 MIRRORS = [
@@ -68,7 +69,7 @@ def lookup_gaia(source_id: str) -> dict:
     )
     for mirror in MIRRORS:
         try:
-            r = requests.get(f"{mirror['simbad']}/simbad/sim-tap/sync", params={"REQUEST": "doQuery", "LANG": "ADQL", "FORMAT": "json", "QUERY": adql}, timeout=TIMEOUT)
+            r = session().get(f"{mirror['simbad']}/simbad/sim-tap/sync", params={"REQUEST": "doQuery", "LANG": "ADQL", "FORMAT": "json", "QUERY": adql}, timeout=TIMEOUT)
             if not r.ok or not r.text.lstrip().startswith("{"):
                 continue
             body = r.json()

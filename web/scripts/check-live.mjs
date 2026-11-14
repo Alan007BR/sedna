@@ -63,6 +63,26 @@ await check("a new position is read live from the archive", async (page, calls) 
   return `service calls: ${[...new Set(calls)].join(", ")}`;
 });
 
+await check("a name typed on the start page is looked up and opened", async (page, calls) => {
+  await page.goto(`${SITE}/?intro=0`);
+  await page.waitForSelector(".target-card", { timeout: T });
+  await page.locator("#landing-input").fill("Orion Nebula");
+  await page.keyboard.press("Enter");
+  await page.waitForSelector(".stage canvas:not([hidden])", { timeout: T });
+  const shown = await page.locator("#target-input").inputValue();
+  if (shown !== "M 42") throw new Error(`the search box shows "${shown}", not the resolved name`);
+  if (!calls.includes("/api/resolve")) throw new Error("the name never reached the resolver");
+  return `"Orion Nebula" -> ${shown} at ${new URL(page.url()).searchParams.get("ra")}, ${new URL(page.url()).searchParams.get("dec")}`;
+});
+
+await check("an unknown name says why", async (page) => {
+  await page.goto(`${SITE}/?intro=0`);
+  await page.waitForSelector(".target-card", { timeout: T });
+  await page.locator("#landing-input").fill("Ceres");
+  await page.keyboard.press("Enter");
+  await page.getByText(/do not know "Ceres"/).waitFor({ timeout: T });
+});
+
 await check("single exposures of a 15' field arrive (a large, streamed response)", async () => {
   const t0 = Date.now();
   const r = await fetch(`${API}/api/film?ra=199.94124&dec=21.48776&fov=15&visit=0`);

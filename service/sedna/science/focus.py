@@ -14,13 +14,13 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
 import numpy as np
-from astropy.wcs import WCS
 from scipy.ndimage import map_coordinates
 
 from ..archive import s3
-from ..archive.cutout import header_of
+from ..archive.cutout import celestial_wcs, header_of
 from ..archive.skyindex import Hit
 from . import parallax
+from ..archive.net import WORKERS
 
 NAXIS = 2040
 INFINITY_AU = 1.0e7
@@ -51,7 +51,7 @@ def _stamps(hit: Hit, ra: np.ndarray, dec: np.ndarray, half: int) -> np.ndarray 
         header, data_start = header_of(hit.key)
     except Exception:
         return None
-    wcs = WCS(header)
+    wcs = celestial_wcs(header)
     pix = wcs.all_world2pix(np.column_stack([ra, dec]), 0, quiet=True)
     xs, ys = pix[:, 0], pix[:, 1]
     inside = (xs > half) & (xs < NAXIS - half) & (ys > half) & (ys < NAXIS - half)
@@ -114,7 +114,7 @@ def judge(result: "FocusResult") -> tuple[str, str]:
     return "clear", "The stack sharpens at one distance and blurs on either side."
 
 
-def run_focus(hits: list[Hit], seed_ra: float, seed_dec: float, seed_mjd: float, distances: np.ndarray | None = None, half: int = 16, workers: int = 24) -> FocusResult:
+def run_focus(hits: list[Hit], seed_ra: float, seed_dec: float, seed_mjd: float, distances: np.ndarray | None = None, half: int = 16, workers: int = WORKERS) -> FocusResult:
     """Sweep the distance ladder over the given exposures, seeded at (seed_ra, seed_dec, seed_mjd)."""
     distances = distance_ladder() if distances is None else distances
     mjd = np.array([h.mjd for h in hits])

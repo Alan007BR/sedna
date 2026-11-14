@@ -17,6 +17,7 @@ type Props = {
   input: string;
   onInput: (value: string) => void;
   inputError: string | null;
+  lookup: string | null;
   onSubmit: (e: React.FormEvent) => void;
   onTarget: (t: Target) => void;
   onMission: (m: Mission) => void;
@@ -60,12 +61,12 @@ export default function Landing(p: Props) {
     .map((id) => p.targets.find((t) => t.id === id))
     .filter((t): t is Target => !!t);
   const sedna = p.targets.find((t) => t.id === "sedna");
-  const help = p.inputError ?? (p.source === "demo" ? (
+  const help = p.inputError ?? (p.lookup ? `Looking up "${p.lookup}" in SIMBAD…` : p.source === "demo" ? (
     <>
       <span className="long">Running on prepared cases: typed coordinates need the live service.</span>
       <span className="short">Running on prepared cases only.</span>
     </>
-  ) : "A star's name, or RA Dec in decimal degrees or hh:mm:ss ±dd:mm:ss");
+  ) : "Any object's name (M42, Betelgeuse), or RA Dec in degrees or hh:mm:ss ±dd:mm:ss");
 
   return (
     <div className={`landing${intro && !intro.leaving ? " hold" : ""}`}>
@@ -111,7 +112,7 @@ export default function Landing(p: Props) {
               />
               <button type="submit">Load sky</button>
             </div>
-            <p id="landing-help" className={`mono landing-help${p.inputError ? " error" : ""}`} role={p.source === "demo" ? "status" : undefined}>{help}</p>
+            <p id="landing-help" className={`mono landing-help${p.inputError ? " error" : ""}`} role={p.source === "demo" || p.lookup ? "status" : undefined} aria-live="polite">{help}</p>
           </form>
 
           <section className="landing-targets rise d5" aria-labelledby="targets-title">

@@ -51,6 +51,6 @@ node scripts/check-demo.mjs <site built with the service unreachable> # every pr
 
 ## Free-tier budget
 
-Measured on this service: exploring a new position with every tool costs about 73 s of CPU and 90 s of wall time. Lambda's always-free allowance (400,000 GB-seconds a month) is about 37 hours at 3 GB, so even 20 judges each exploring several new fields use a few percent of it. Prepared cases cost nothing, since they never reach the service.
+Measured on this service: a new 6′ field reads about 400 exposures (about 300 MB of image rows) in about 10 s on Lambda, limited by the network (about 30 MB/s; 48 or 64 download threads were no faster than 24, see `SEDNA_WORKERS`). Its CPU cost fell from about 16 s to about 3.5 s once the service kept one HTTPS session for all threads and loaded the CA bundle once (`service/sedna/archive/net.py`), and built each exposure's WCS from its celestial keywords only (`celestial_wcs`, identical pixels). Exploring a new position with every tool costs well under a minute of CPU. Lambda's always-free allowance (400,000 GB-seconds a month) is about 37 hours at 3 GB, so even 20 judges each exploring several new fields use a few percent of it. Prepared cases cost nothing, since they never reach the service.
 
 Code and text written with AI assistance (Claude); see AI_USAGE.md.

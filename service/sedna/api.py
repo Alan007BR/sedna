@@ -19,6 +19,8 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from .archive.gaia import cone as gaia_cone
+from .archive.sesame import SesameUnavailable
+from .archive.sesame import resolve as sesame_resolve
 from .archive.simbad import MIRRORS as SIMBAD_MIRRORS
 from .archive.simbad import SimbadUnavailable
 from .archive.simbad import lookup_gaia as simbad_lookup
@@ -32,7 +34,7 @@ from .archive import horizons
 from .follow_service import CONTROLS as FOLLOW_CONTROLS
 from .follow_service import STAMP as FOLLOW_STAMP
 from .follow_service import follow
-from .models import BrightnessResponse, FollowResponse, MoversResponse, NextVisitResponse, RulerResponse, StarResponse
+from .models import BrightnessResponse, FollowResponse, MoversResponse, NextVisitResponse, ResolveResponse, RulerResponse, StarResponse
 from .movers_service import MAX_RATE_ARCSEC_H, VISIBLE_V, movers_in_field
 from .next_visit_service import DISTANCE_SPREAD as NV_SPREAD
 from .next_visit_service import MAX_EXPOSURES as NV_MAX
@@ -181,6 +183,37 @@ def star(gaia: str = Query(..., pattern=r"^\d{6,20}$", description="Gaia DR3 sou
             },
         }
     return {"schemaVersion": SCHEMA, "available": True, **info}
+
+
+def _tidy_identifier(main_id: str) -> str:
+    """SIMBAD pads identifiers ("M  42") and prefixes common names ("NAME Barnard's star")."""
+    text = " ".join(main_id.split())
+    return text[5:] if text.startswith("NAME ") else text
+
+
+@app.get("/api/resolve", response_model=ResolveResponse)
+def resolve_name(name: str = Query(..., min_length=1, max_length=80, description="an object's name, as people type it")):
+    """Where a named object is: SIMBAD, then NED, then VizieR, through CDS Sesame and its mirrors."""
+    try:
+        found = sesame_resolve(name)
+    except SesameUnavailable:
+        raise HTTPException(503, detail={"code": "RESOLVER_UNAVAILABLE", "message": "The name resolver (CDS Sesame and its mirrors) did not answer. Type coordinates instead."})
+    query = " ".join(name.split())
+    if not found:
+        return {"schemaVersion": SCHEMA, "query": query, "found": False}
+    return {
+        "schemaVersion": SCHEMA,
+        "query": query,
+        "found": True,
+        "name": _tidy_identifier(found.name),
+        "ra": found.ra,
+        "dec": found.dec,
+        "pmRa": found.pm_ra,
+        "pmDec": found.pm_dec,
+        "type": found.otype,
+        "resolver": found.resolver,
+        "source": f"{found.resolver} via Sesame ({found.source})",
+    }
 
 
 @app.get("/api/parallax-ruler", response_model=RulerResponse)

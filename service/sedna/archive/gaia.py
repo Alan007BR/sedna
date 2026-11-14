@@ -8,8 +8,8 @@ import hashlib
 import json
 from pathlib import Path
 
-import requests
 from ..paths import CACHE_DIR
+from .net import session
 
 TAP = "https://gea.esac.esa.int/tap-server/tap/sync"
 CACHE = CACHE_DIR / "gaia"
@@ -28,7 +28,7 @@ def cone(ra: float, dec: float, radius_deg: float, g_max: float = 16.5, limit: i
         f"WHERE 1=CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', {ra}, {dec}, {radius_deg})) AND phot_g_mean_mag < {g_max} "
         "ORDER BY phot_g_mean_mag"
     )
-    r = requests.get(TAP, params={"REQUEST": "doQuery", "LANG": "ADQL", "FORMAT": "json", "QUERY": adql}, timeout=40)
+    r = session().get(TAP, params={"REQUEST": "doQuery", "LANG": "ADQL", "FORMAT": "json", "QUERY": adql}, timeout=40)
     r.raise_for_status()
     body = r.json()
     cols = [c["name"] for c in body["metadata"]]

@@ -214,6 +214,21 @@ class StarResponse(BaseModel):
     links: StarLinks
 
 
+class ResolveResponse(BaseModel):
+    schemaVersion: int
+    query: str
+    found: bool  # False when no database knows the name (moving bodies such as asteroids are not in them)
+    name: str | None = None  # the database's main identifier, tidied: "M 42", "* alf Ori", "Barnard's star"
+    ra: float | None = None  # J2000, degrees
+    dec: float | None = None
+    pmRa: float | None = None  # mas/yr, times cos(dec)
+    pmDec: float | None = None
+    epoch: float = 2000.0
+    type: str | None = None  # SIMBAD object type code, e.g. HII, s*r, AGN
+    resolver: str | None = None  # Simbad, NED or VizieR
+    source: str | None = None  # which Sesame site answered
+
+
 class RulerMark(BaseModel):
     distanceAu: float
     label: str

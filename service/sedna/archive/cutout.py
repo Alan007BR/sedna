@@ -8,6 +8,7 @@ Code written with AI assistance (Claude); see AI_USAGE.md.
 from __future__ import annotations
 
 import hashlib
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -50,13 +51,24 @@ def header_of(key: str) -> tuple[fits.Header, int]:
     return h.header, h.data_start
 
 
+# the celestial WCS of a Level-2 IMAGE header: TAN with SIP distortion. The header also carries the spectral
+# WCS (key W) and about 300 other cards; parsing only these keywords builds the same WCS about four times faster
+# (2 ms instead of 9 ms, identical pixels over 300 headers), and every live request builds hundreds of them.
+_CELESTIAL = re.compile(r"^(WCSAXES|NAXIS[12]?|CTYPE[12]|CRVAL[12]|CRPIX[12]|CDELT[12]|CUNIT[12]|CD[12]_[12]|PC[12]_[12]|LONPOLE|LATPOLE|RADESYS|EQUINOX|(A|B|AP|BP)_(ORDER|\d+_\d+))$")
+
+
+def celestial_wcs(header: fits.Header) -> WCS:
+    """The exposure's sky WCS, built from its celestial keywords only."""
+    return WCS(fits.Header([card for card in header.cards if _CELESTIAL.match(card.keyword)]))
+
+
 def read_cutout(key: str, ra: float, dec: float, half: int = 16) -> Cutout | None:
     """Patch of (2*half+1)^2 pixels centred on (ra, dec), or None if the position is off the detector."""
     try:
         header, data_start = header_of(key)
     except requests.HTTPError:  # this detector's file is missing for the exposure
         return None
-    wcs = WCS(header)
+    wcs = celestial_wcs(header)
     x, y = wcs.all_world2pix([[ra, dec]], 0, quiet=True)[0]
     if not (0 <= x < NAXIS and 0 <= y < NAXIS):
         return None

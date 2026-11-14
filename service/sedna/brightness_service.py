@@ -17,6 +17,7 @@ from .archive.cutout import read_cutout
 from .archive.skyindex import SkyIndex
 from .archive.wavelength import WaveMap
 from .science.photometry import aperture, brightness_change, channel, time_bins, wing
+from .archive.net import WORKERS
 
 CONTAMINATION_ARCSEC = {"aperture": 18.0, "wing": 45.0}  # how close a neighbour can leak into the measuring ring
 CONTAMINATION_SHARE = 0.05  # neighbours fainter than 5 % of the light measured at the point cannot move it by 0.05 mag
@@ -50,7 +51,7 @@ class Exposure:
     channel: int = 0
 
 
-def measure_point(index: SkyIndex, ra: float, dec: float, position_at=None, workers: int = 24):
+def measure_point(index: SkyIndex, ra: float, dec: float, position_at=None, workers: int = WORKERS):
     """Returns (method, exposures measured, exposures available, change per detector)."""
     hits = index.lookup(ra, dec)
     available = len(hits)

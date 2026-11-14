@@ -12,30 +12,18 @@ Code written with AI assistance (Claude); see AI_USAGE.md.
 from __future__ import annotations
 
 import re
-import threading
 from dataclasses import dataclass
 
 import numpy as np
-import requests
 from astropy.io import fits
-from requests.adapters import HTTPAdapter
+
+from .net import session
 
 BUCKET_URL = "https://nasa-irsa-spherex.s3.amazonaws.com"
 BLOCK = 2880
 HEADER_BYTES = 10 * BLOCK  # primary header (1 block) + IMAGE header (9 blocks in pipeline 7.0.5)
 NAXIS = 2040
 
-_local = threading.local()
-
-
-def session() -> requests.Session:
-    """One pooled HTTP session per thread."""
-    s = getattr(_local, "session", None)
-    if s is None:
-        s = requests.Session()
-        s.mount("https://", HTTPAdapter(pool_connections=4, pool_maxsize=64, max_retries=3))
-        _local.session = s
-    return s
 
 
 def list_prefix(prefix: str, delimiter: str = "/") -> tuple[list[str], list[tuple[str, int]]]:

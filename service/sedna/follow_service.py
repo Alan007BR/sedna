@@ -22,6 +22,7 @@ from .archive.cutout import read_cutout
 from .archive.skyindex import SkyIndex
 from .focus_service import body_visits
 from .science.stack import Grid, resample, robust_mean
+from .archive.net import WORKERS
 
 BIG = 121  # static-sky grid per visit (12.4 arcmin): the body's path within a visit plus the control offsets
 STAMP = 21
@@ -55,7 +56,7 @@ def snr(stack: np.ndarray | None) -> float:
     return float(box[c, c] / noise) if noise > 0 else float("nan")
 
 
-def follow(index: SkyIndex, ident: str, detectors=REFLECTED, workers: int = 24, seed: int = 3) -> dict:
+def follow(index: SkyIndex, ident: str, detectors=REFLECTED, workers: int = WORKERS, seed: int = 3) -> dict:
     visits = body_visits(index, ident, detectors=(1, 2, 3, 4, 5, 6))
     visits = [[h for h in v if h.det in detectors] for v in visits]
     visits = [v for v in visits if len(v) >= 3]

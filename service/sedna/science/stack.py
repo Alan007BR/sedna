@@ -17,6 +17,7 @@ from scipy.ndimage import map_coordinates
 
 from ..archive.cutout import Cutout, read_cutout
 from ..archive.skyindex import Hit, SkyIndex, split_visits
+from ..archive.net import WORKERS
 
 PIXEL_ARCSEC = 6.15
 # from the pipeline's wavelength maps (archive/wavelength.py), rounded outward
@@ -103,7 +104,7 @@ class Stack:
     n_read: int
 
 
-def build_stack(index: SkyIndex, ra: float, dec: float, fov_arcmin: float = 6.0, detectors=(1, 2, 3, 4, 5, 6), position_at=None, workers: int = 24) -> Stack:
+def build_stack(index: SkyIndex, ra: float, dec: float, fov_arcmin: float = 6.0, detectors=(1, 2, 3, 4, 5, 6), position_at=None, workers: int = WORKERS) -> Stack:
     """Aligned frames for a position. ``position_at(mjd)`` centres cutouts on a moving target; the grid stays fixed on the sky."""
     size = int(round(fov_arcmin * 60 / PIXEL_ARCSEC)) | 1
     grid = Grid(ra, dec, size)
@@ -150,7 +151,7 @@ def build_stack(index: SkyIndex, ra: float, dec: float, fov_arcmin: float = 6.0,
     return Stack(grid=grid, frames=frames, n_requested=len(hits), n_read=sum(c is not None for c in cuts))
 
 
-def build_film(index: SkyIndex, ra: float, dec: float, fov_arcmin: float = 6.0, visit: int = 0, detectors=(1, 2, 3, 4), workers: int = 24, limit: int = 96):
+def build_film(index: SkyIndex, ra: float, dec: float, fov_arcmin: float = 6.0, visit: int = 0, detectors=(1, 2, 3, 4), workers: int = WORKERS, limit: int = 96):
     """Single exposures of one visit on the north-up grid, each divided by its own noise, in time order.
 
     Unlike the per-visit frames, nothing is averaged, so a body that moves within the visit is still there.
@@ -191,7 +192,7 @@ def build_film(index: SkyIndex, ra: float, dec: float, fov_arcmin: float = 6.0, 
     return grid, len(visits), visit, frames
 
 
-def build_timebins(index: SkyIndex, ra: float, dec: float, fov_arcmin: float = 8.0, bin_days: float = 10.0, detectors=(1, 2, 3, 4, 5, 6), workers: int = 24) -> Stack:
+def build_timebins(index: SkyIndex, ra: float, dec: float, fov_arcmin: float = 8.0, bin_days: float = 10.0, detectors=(1, 2, 3, 4, 5, 6), workers: int = WORKERS) -> Stack:
     """Like ``build_stack``, but frames are time bins of ``bin_days`` instead of whole visits.
 
     Meant for fields observed continuously, such as SPHEREx's deep fields near the

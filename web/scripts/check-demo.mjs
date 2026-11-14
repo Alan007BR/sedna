@@ -135,6 +135,14 @@ await check("Makemake's field: movers, ruler, single exposures, picked point", a
   return (await page.locator(".next-visit p").first().innerText()).slice(0, 90);
 });
 
+await check("a typed name says name search needs the live service", async (page) => {
+  await page.goto(`${APP}/?intro=0`);
+  await page.waitForSelector(".target-card", { timeout: T });
+  await page.locator("#landing-input").fill("Orion Nebula");
+  await page.keyboard.press("Enter");
+  await page.getByText(/Name search needs the live data service/).waitFor({ timeout: T });
+});
+
 await check("an unprepared field says which cases are prepared", async (page) => {
   await page.goto(`${APP}/?ra=10.00000&dec=-20.00000&fov=6&band=2&mode=blink`);
   const msg = await page.locator(".stage-msg.error").innerText({ timeout: T });

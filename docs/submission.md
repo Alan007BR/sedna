@@ -7,6 +7,7 @@
 > 4. **FortiGuard:** pedir a classificação de `sednaspace.earth` (https://www.fortiguard.com/faq/wfratingsubmit), como o guia recomenda.
 > 5. Marcar "Terms and Conditions" e "Confirm All Work is Original".
 > 6. *High-Level Project Summary* tem limite de 1.500 caracteres (o texto abaixo tem 1.428).
+> 7. **Caixas de SI** a marcar: Ideation or Brainstorming; Research or Information Gathering; Data Analysis and Interpretation; Coding, Debugging, or Troubleshooting; Writing, Editing, or Translation; Visual Design or Image Creation; Presentation, Video, or Audio. **Não** marcar: Building SI/ML Into the Project (o SEDNA não tem IA dentro), Other, None.
 
 ---
 
@@ -69,6 +70,8 @@ Yes. We used Claude Code (Anthropic) and Codex (OpenAI) as coding and writing as
 - **Code:** most source files were written or edited with AI assistance; each such file says so in its header comment, and `AI_USAGE.md` in the repository describes where and how.
 - **Research support:** summarising public documentation of the SPHEREx archive, the challenge and related tools, and checking whether the team's idea of a distance focus was feasible with SPHEREx data.
 - **Tests and checks:** writing probe scripts and tests, and reading their results.
+- **Feature discussion:** suggesting secondary features and refinements around the team's idea, such as the region search, which the team chose or turned down.
+- **Writing:** drafting the documentation and this page, which the team reviewed and edited.
 - **Visual identity:** Codex helped create the SEDNA logo, its animations and the brand guide.
 - **Demo video:** a recording of the published site, made by a script written with AI help. The narration voice is synthetic (Microsoft neural text-to-speech reading our script), and a label on every frame says so, together with the AI-assisted logo and animations. It contains no AI-generated images and no music.
 

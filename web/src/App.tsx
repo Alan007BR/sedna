@@ -547,10 +547,8 @@ export default function App() {
   // what the void view shows around the sky; the sky view shows the same elements in its drawer
   const detailsEl = !view ? null : (
     <>
+            {/* short context first: the mission, what was clicked, what can be measured, what is known */}
             {coach}
-            {view.ruler && rulerPair && (
-              <RulerPanel state={ruler} fromLabel={dateLabel(rulerPair.from.start)} toLabel={dateLabel(rulerPair.to.start)} onFocus={() => update({ mode: "film" }, true)} />
-            )}
             {picked && (
               <p className="verdict" role="status">
                 <strong>Known star.</strong> Gaia DR3 {picked.id}, G = {picked.g?.toFixed(1) ?? "?"}. Catalogue motion {(Math.hypot(picked.pmRa ?? 0, picked.pmDec ?? 0) / 1000).toFixed(2)}″ per year:
@@ -571,13 +569,17 @@ export default function App() {
                 </button>
               </div>
             )}
+            {target && <p className="note-line target-note">{target.note}</p>}
+            <MoversNote state={movers} onShow={(m) => update({ mode: "film", fv: m.visit, ft: m.closestMjd }, true)} />
+            {/* then the larger panels */}
+            {view.ruler && rulerPair && (
+              <RulerPanel state={ruler} fromLabel={dateLabel(rulerPair.from.start)} toLabel={dateLabel(rulerPair.to.start)} onFocus={() => update({ mode: "film" }, true)} />
+            )}
             {lens && (
               <Suspense fallback={<p className="note-line" role="status">Opening the brightness lens…</p>}>
                 <BrightnessPanel ra={lens.ra} dec={lens.dec} target={lens.target} label={lens.label} onClose={() => update({ bp: null }, true)} />
               </Suspense>
             )}
-            <MoversNote state={movers} onShow={(m) => update({ mode: "film", fv: m.visit, ft: m.closestMjd }, true)} />
-            {target && <p className="note-line">{target.note}</p>}
     </>
   );
   const modePanelEl = !view ? null : (
@@ -719,7 +721,7 @@ export default function App() {
               <button type="button" className="text" onClick={() => copy("link", location.href)}>
                 {copied === "link" ? "Copied" : "Copy link"}
               </button>
-              <button type="button" className="text" onClick={() => copy("embed", embedCode())} title="An iframe of this view for another web page">
+              <button type="button" className="text wide-only" onClick={() => copy("embed", embedCode())} title="An iframe of this view for another web page">
                 {copied === "embed" ? "Copied" : "Copy embed code"}
               </button>
             </>
@@ -769,8 +771,9 @@ export default function App() {
       )}
 
       {view && (
-        <main className="viewer">
-          <aside className="rail left">
+        <main className={`viewer${modePanelEl ? " panel-mode" : ""}`}>
+          {/* every control in one column, beside the sky */}
+          <aside className="rail left" aria-label="Controls">
             <div className="group" role="group" aria-label="Compare mode">
               <span className="eyebrow">Compare</span>
               {MODES.map((m) => (
@@ -780,17 +783,47 @@ export default function App() {
                 </button>
               ))}
             </div>
-            {view.mode !== "focus" && view.mode !== "follow" && (
-            <div className="group" role="group" aria-label="Field of view">
-              <span className="eyebrow">Field of view</span>
-              <div className="chips">
-                {FOVS.map((f) => (
-                  <button key={f} type="button" className="opt mono" aria-pressed={view.fov === f} onClick={() => update({ fov: f }, true)} title={f > 6 ? "Larger fields take longer to load" : undefined}>
-                    {f}′
-                  </button>
-                ))}
+            {!modePanelEl && (
+              <div className="group" role="group" aria-label="Detector">
+                <span className="eyebrow">Detector</span>
+                <div className="chips det-chips">
+                  {DETECTORS.map((d) => (
+                    <button key={d.id} type="button" className="opt mono" aria-pressed={view.det === d.id} onClick={() => update({ det: d.id })} title={d.range} aria-label={`Detector ${d.id}, ${d.range}`}>
+                      D{d.id}
+                    </button>
+                  ))}
+                </div>
+                <span className="sub mono det-range">{DETECTORS[view.det - 1].range}</span>
               </div>
-            </div>
+            )}
+            {view.mode !== "focus" && view.mode !== "follow" && (
+              <div className="group" role="group" aria-label="Field of view">
+                <span className="eyebrow">Field of view</span>
+                <div className="chips">
+                  {FOVS.map((f) => (
+                    <button key={f} type="button" className="opt mono" aria-pressed={view.fov === f} onClick={() => update({ fov: f }, true)} title={f > 6 ? "Larger fields take longer to load" : undefined}>
+                      {f}′
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {!modePanelEl && (
+              <div className="group" role="group" aria-label="Overlays and display">
+                <span className="eyebrow">Overlays</span>
+                <button type="button" className="opt" aria-pressed={view.gaia} onClick={() => update({ gaia: !view.gaia })}>
+                  <span className="dot" />Gaia DR3 stars
+                </button>
+                <button type="button" className="opt" aria-pressed={view.invert} onClick={() => update({ invert: !view.invert })}>
+                  <span className="dot" />Invert
+                </button>
+                <button type="button" className="opt" aria-pressed={view.ruler} onClick={() => update({ ruler: !view.ruler }, true)} title="How far a body here would move between two visits">
+                  <span className="dot" />Parallax ruler
+                </button>
+                <a className="opt link" href={`http://byw.tools/wiseview#ra=${view.ra.toFixed(5)}&dec=${view.dec.toFixed(5)}&size=${Math.round(view.fov * 60)}&band=2`} target="_blank" rel="noopener">
+                  Same sky in WiseView ↗<span className="sr"> (opens in new tab)</span>
+                </a>
+              </div>
             )}
           </aside>
 
@@ -799,47 +832,26 @@ export default function App() {
             {captionEl}
             {stageEl}
             <div className="readout mono">
-              <span>{readout ?? "Point at the sky to read its position and value"}</span>
+              <span>{readout ?? "Point at the sky to read its position and value; click to identify"}</span>
               <span>North up, east left · asinh, one stretch for all dates</span>
             </div>
-            {detailsEl}
+            {/* the timeline stays right under the sky, whatever the details below or beside it hold */}
+            <footer className="timeline">
+              {playbackEl}
+              <button type="button" className="speed mono" onClick={() => update({ fps: view.fps === 1 ? 2 : view.fps === 2 ? 4 : 1 })} aria-label="Blink speed">
+                {view.fps} fps
+              </button>
+            </footer>
           </section>
           )}
 
-          <aside className="rail right" hidden={view.mode === "focus" || view.mode === "film" || view.mode === "follow"}>
-            <div className="group" role="group" aria-label="Detector">
-              <span className="eyebrow">Detector</span>
-              {DETECTORS.map((d) => (
-                <button key={d.id} type="button" className="opt" aria-pressed={view.det === d.id} onClick={() => update({ det: d.id })}>
-                  <span className="dot" />
-                  <span className="mono">D{d.id}</span>
-                  <span className="sub mono">{d.range}</span>
-                </button>
-              ))}
-            </div>
-            <div className="group" role="group" aria-label="Overlays and display">
-              <span className="eyebrow">Overlays</span>
-              <button type="button" className="opt" aria-pressed={view.gaia} onClick={() => update({ gaia: !view.gaia })}>
-                <span className="dot" />Gaia DR3 stars
-              </button>
-              <button type="button" className="opt" aria-pressed={view.invert} onClick={() => update({ invert: !view.invert })}>
-                <span className="dot" />Invert
-              </button>
-              <button type="button" className="opt" aria-pressed={view.ruler} onClick={() => update({ ruler: !view.ruler }, true)} title="How far a body here would move between two visits">
-                <span className="dot" />Parallax ruler
-              </button>
-              <a className="opt link" href={`http://byw.tools/wiseview#ra=${view.ra.toFixed(5)}&dec=${view.dec.toFixed(5)}&size=${Math.round(view.fov * 60)}&band=2`} target="_blank" rel="noopener">
-                Same sky in WiseView ↗<span className="sr"> (opens in new tab)</span>
-              </a>
-            </div>
-          </aside>
-
-          <footer className="timeline" hidden={view.mode === "focus" || view.mode === "film" || view.mode === "follow"}>
-            {playbackEl}
-            <button type="button" className="speed mono" onClick={() => update({ fps: view.fps === 1 ? 2 : view.fps === 2 ? 4 : 1 })} aria-label="Blink speed">
-              {view.fps} fps
-            </button>
-          </footer>
+          {/* what is known about this field, beside the sky (below it on narrower screens) */}
+          {!modePanelEl && (
+            <aside className="details" aria-label="About this field">
+              <span className="eyebrow">About this field</span>
+              {detailsEl}
+            </aside>
+          )}
         </main>
       )}
 

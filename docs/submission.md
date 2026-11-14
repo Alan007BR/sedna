@@ -1,14 +1,5 @@
 # Project page: text to paste
 
-> **Notas para a equipe (não colar):**
-> 1. **Link do vídeo:** subir `docs/video/sedna-demo-30s.mp4` (28,8 s, narrado, com legendas na imagem) no YouTube (Não listado ou Público) e colar o link em *Link to Project Demo*. Testar numa janela anônima. Na descrição do YouTube, repetir: "Narration: synthetic voice (Microsoft neural text-to-speech). Logo and animations made with AI assistance."
-> 2. **Origem da ideia:** resolvido. A ideia do distance focus é do Alan; a IA analisou a viabilidade (pesquisa e testes de decisão em dados reais). O campo *Use of Super Intelligence* abaixo diz isso.
-> 3. **Repositório público** antes de enviar (o link aparece na descrição).
-> 4. **FortiGuard:** pedir a classificação de `sednaspace.earth` (https://www.fortiguard.com/faq/wfratingsubmit), como o guia recomenda.
-> 5. Marcar "Terms and Conditions" e "Confirm All Work is Original".
-> 6. *High-Level Project Summary* tem limite de 1.500 caracteres (o texto abaixo tem 1.428).
-> 7. **Caixas de SI** a marcar: Research or Information Gathering; Data Analysis and Interpretation; Coding, Debugging, or Troubleshooting; Writing, Editing, or Translation; Visual Design or Image Creation; Presentation, Video, or Audio. **Não** marcar: Ideation or Brainstorming (decisão do Alan), Building SI/ML Into the Project (o SEDNA não tem IA dentro), Other, None.
-
 ---
 
 ## Project Name

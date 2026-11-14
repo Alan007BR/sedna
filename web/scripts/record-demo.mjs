@@ -233,6 +233,10 @@ execFileSync(FFMPEG, [
   "-filter_complex", `${video};${delays};${mix}`, "-map", "[vout]", "-map", "[aout]",
   "-color_range", "tv", "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709",
   "-c:v", "libx264", "-preset", "slow", "-crf", "17", "-c:a", "aac", "-b:a", "192k", "-ar", "48000",
+  // the AI disclosure also travels in the file's metadata, as the Space Apps rules ask for AI audio
+  "-metadata", "title=SEDNA, 30-second demo (NASA Space Apps Challenge 2026, Planet X and SPHEREx)", "-metadata", "artist=Team Deneb",
+  "-metadata", `comment=Screen recording of ${SITE}. Narration: synthetic voice (Microsoft neural text-to-speech, ${SPEC.voice}) reading the team's script. Logo and animations made with AI assistance. See AI_USAGE.md.`,
+  "-metadata:s:a:0", "title=Synthetic narration (Microsoft neural text-to-speech)",
   "-movflags", "+faststart", "-t", total.toFixed(2), OUT,
 ], { stdio: "inherit" });
 console.log(`wrote ${OUT}: ${total.toFixed(2)} s, ${frames.length} frames, narration cues ${cues.map((c) => `${c.id}@${c.t.toFixed(2)}`).join(" ")}`);

@@ -160,7 +160,7 @@ for (const vp of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
     await page.waitForSelector(".sky-marks circle", { timeout: T });
     const f = await page.locator(".sky-frame").boundingBox();
     await page.mouse.click(f.x + f.width / 2, f.y + f.height / 2);
-    await page.waitForSelector(".sky-drawer .verdict", { timeout: T });
+    await page.waitForSelector(".sky-drawer .star-card", { timeout: T });
     const covered = await page.evaluate(() => {
       const r = (s) => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); return b.width ? b : null; };
       const w = r(".sky-frame"), d = r(".sky-drawer");

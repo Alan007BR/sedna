@@ -64,3 +64,17 @@ describe("brightness lens", () => {
     expect(lines.length).toBe(data.exposures.length + 2);
   });
 });
+
+describe("brightness lens requests", () => {
+  it("measures a point once per session: hiding and reopening asks nothing again", async () => {
+    const { vi } = await import("vitest");
+    vi.resetModules();
+    const request = vi.fn().mockResolvedValue(recorded);
+    vi.doMock("./transport", () => ({ request }));
+    const { fetchBrightness } = await import("./brightness");
+    await fetchBrightness(76.9566, 30.40129, "rwaur");
+    await fetchBrightness(76.9566, 30.40129, "rwaur");
+    expect(request).toHaveBeenCalledTimes(1);
+    vi.doUnmock("./transport");
+  });
+});

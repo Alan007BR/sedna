@@ -15,6 +15,7 @@ import { fetchRuler } from "./lib/prediction";
 import { onSourceChange, type Active } from "./lib/transport";
 import { paintStack, sharedLimits, type ViewMode } from "./lib/render";
 import SkyView from "./SkyView";
+import StarCard from "./StarCard";
 
 type Mode = "blink" | "diff" | "sum" | "film" | "focus" | "follow";
 const MODES: { id: Mode; label: string }[] = [
@@ -549,12 +550,7 @@ export default function App() {
     <>
             {/* short context first: the mission, what was clicked, what can be measured, what is known */}
             {coach}
-            {picked && (
-              <p className="verdict" role="status">
-                <strong>Known star.</strong> Gaia DR3 {picked.id}, G = {picked.g?.toFixed(1) ?? "?"}. Catalogue motion {(Math.hypot(picked.pmRa ?? 0, picked.pmDec ?? 0) / 1000).toFixed(2)}″ per year:
-                about {shiftPx(picked).toFixed(2)} pixel over the dates shown.
-              </p>
-            )}
+            {picked && <StarCard star={picked} shiftPx={shiftPx(picked)} />}
             {clickSky && !view.bp && (
               <div className="focus-actions measure">
                 <button type="button" className="text ice" onClick={() => update({ bp: `${clickSky.ra.toFixed(5)},${clickSky.dec.toFixed(5)}` }, true)}>
@@ -577,7 +573,7 @@ export default function App() {
             )}
             {lens && (
               <Suspense fallback={<p className="note-line" role="status">Opening the brightness lens…</p>}>
-                <BrightnessPanel ra={lens.ra} dec={lens.dec} target={lens.target} label={lens.label} onClose={() => update({ bp: null }, true)} />
+                <BrightnessPanel ra={lens.ra} dec={lens.dec} target={lens.target} label={lens.label} />
               </Suspense>
             )}
     </>

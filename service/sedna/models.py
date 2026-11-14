@@ -193,6 +193,27 @@ class FollowResponse(BaseModel):
     source: Literal["archive", "cache"]
 
 
+class StarLinks(BaseModel):
+    simbad: str
+    gaia: str
+
+
+class StarResponse(BaseModel):
+    schemaVersion: int
+    gaiaId: str
+    available: bool  # False when no SIMBAD site answered; the links still work once one does
+    found: bool  # SIMBAD has a record for this Gaia source
+    source: str | None
+    name: str | None = None  # the usual name, e.g. "Barnard's star"
+    mainId: str | None = None
+    type: str | None = None
+    spType: str | None = None
+    distancePc: float | None = None
+    designations: list[str] = []
+    identifiers: int = 0
+    links: StarLinks
+
+
 class RulerMark(BaseModel):
     distanceAu: float
     label: str

@@ -19,6 +19,9 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from .archive.gaia import cone as gaia_cone
+from .archive.simbad import MIRRORS as SIMBAD_MIRRORS
+from .archive.simbad import SimbadUnavailable
+from .archive.simbad import lookup_gaia as simbad_lookup
 from .archive.skybot import known_object
 from .archive.skyindex import SkyIndex
 from .science import parallax
@@ -29,7 +32,7 @@ from .archive import horizons
 from .follow_service import CONTROLS as FOLLOW_CONTROLS
 from .follow_service import STAMP as FOLLOW_STAMP
 from .follow_service import follow
-from .models import BrightnessResponse, FollowResponse, MoversResponse, NextVisitResponse, RulerResponse
+from .models import BrightnessResponse, FollowResponse, MoversResponse, NextVisitResponse, RulerResponse, StarResponse
 from .movers_service import MAX_RATE_ARCSEC_H, VISIBLE_V, movers_in_field
 from .next_visit_service import DISTANCE_SPREAD as NV_SPREAD
 from .next_visit_service import MAX_EXPOSURES as NV_MAX
@@ -156,6 +159,27 @@ def gaia(ra: float, dec: float, fov: float = 6.0):
     except Exception as err:
         raise HTTPException(503, detail={"code": "CATALOG_UNAVAILABLE", "message": "The Gaia archive did not answer.", "cause": repr(err)[:120]})
     return {"schemaVersion": SCHEMA, "catalog": "Gaia DR3", "refEpoch": 2016.0, "sources": rows}
+
+
+@app.get("/api/star", response_model=StarResponse)
+def star(gaia: str = Query(..., pattern=r"^\d{6,20}$", description="Gaia DR3 source_id")):
+    """What SIMBAD knows about a Gaia DR3 star, with links to its SIMBAD page and its Gaia DR3 record."""
+    try:
+        info = simbad_lookup(gaia)
+    except SimbadUnavailable:
+        mirror = SIMBAD_MIRRORS[1]  # the mirror that stayed up when CDS went offline
+        return {
+            "schemaVersion": SCHEMA,
+            "gaiaId": gaia,
+            "available": False,
+            "found": False,
+            "source": None,
+            "links": {
+                "simbad": f"{mirror['simbad']}/simbad/sim-id?Ident=Gaia+DR3+{gaia}",
+                "gaia": f"{mirror['vizier']}/viz-bin/VizieR-5?-source=I/355/gaiadr3&Source={gaia}",
+            },
+        }
+    return {"schemaVersion": SCHEMA, "available": True, **info}
 
 
 @app.get("/api/parallax-ruler", response_model=RulerResponse)

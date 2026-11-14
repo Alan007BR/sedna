@@ -21,7 +21,7 @@ import {
 } from "./lib/brightness";
 import { formatSexagesimal } from "./lib/coords";
 
-type Props = { ra: number; dec: number; target: string | null; label: string; onClose: () => void };
+type Props = { ra: number; dec: number; target: string | null; label: string };
 
 const AXIS = { stroke: "var(--line-strong)", tick: { fill: "var(--muted)", fontSize: 11, fontFamily: "var(--font-data)" }, tickLine: false } as const;
 
@@ -57,23 +57,48 @@ function SpectrumTip({ active, payload }: { active?: boolean; payload?: { payloa
   );
 }
 
-export default function BrightnessPanel({ ra, dec, target, label, onClose }: Props) {
+/** What the lens will look like, drawn while the service measures: the summary, both charts, the legend. */
+function LensSkeleton() {
+  const [seconds, setSeconds] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setSeconds((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return (
+    <div className="lens-loading" role="status" aria-live="polite">
+      <div className="lens-progress" aria-hidden="true"><i /></div>
+      <p className="lens-loading-text">
+        Measuring this point in every SPHEREx exposure <span className="mono">{seconds} s</span>
+        <span className="muted">{seconds < 25 ? " · usually 5 to 20 s the first time, instant after" : " · deep fields have thousands of exposures, still working"}</span>
+      </p>
+      <span className="skeleton-line wide" aria-hidden="true" />
+      <span className="skeleton-line" aria-hidden="true" />
+      <div className="skeleton-chart" aria-hidden="true"><span>Change over time</span></div>
+      <div className="skeleton-legend" aria-hidden="true">{[1, 2, 3, 4, 5, 6].map((d) => <i key={d} style={{ background: detectorColor(d) }} />)}</div>
+      <div className="skeleton-chart" aria-hidden="true"><span>Spectrum</span></div>
+    </div>
+  );
+}
+
+export default function BrightnessPanel({ ra, dec, target, label }: Props) {
   const [state, setState] = useState<{ kind: "loading" } | { kind: "error"; message: string } | { kind: "ready"; data: Brightness }>({ kind: "loading" });
   const [bin, setBin] = useState<number | null>(null);
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
-    const ctrl = new AbortController();
+    let live = true;
     setState({ kind: "loading" });
-    fetchBrightness(ra, dec, target, ctrl.signal)
+    setCollapsed(false);
+    fetchBrightness(ra, dec, target)
       .then((data) => {
+        if (!live) return;
         setState({ kind: "ready", data });
         setBin(defaultSpectrumBin(data));
       })
       .catch((err) => {
-        if (err.name === "AbortError") return;
-        setState({ kind: "error", message: err instanceof ApiError ? err.message : "The brightness could not be measured here." });
+        if (live) setState({ kind: "error", message: err instanceof ApiError ? err.message : "The brightness could not be measured here." });
       });
-    return () => ctrl.abort();
+    return () => { live = false; };
   }, [ra, dec, target]);
 
   const data = state.kind === "ready" ? state.data : null;
@@ -92,17 +117,20 @@ export default function BrightnessPanel({ ra, dec, target, label, onClose }: Pro
   const currentBin = bins.find((b) => b.index === bin);
 
   return (
-    <section className="lens" aria-label={`Brightness of ${label}`}>
+    <section className={`lens${collapsed ? " collapsed" : ""}`} aria-label={`Brightness of ${label}`}>
       <div className="lens-head">
         <span className="eyebrow">Brightness</span>
         <span className="mono">{label === "this point" ? formatSexagesimal(ra, dec) : label}</span>
-        <button type="button" className="text" onClick={onClose}>Close</button>
+        {collapsed && data && <span className="lens-head-summary">{summary(data)}</span>}
+        <button type="button" className="text" onClick={() => setCollapsed((c) => !c)} aria-expanded={!collapsed}>
+          {collapsed ? "Show" : "Hide"}
+        </button>
       </div>
 
-      {state.kind === "loading" && <p className="note-line" role="status">Measuring this point in every SPHEREx exposure. This takes 5 to 20 seconds the first time.</p>}
-      {state.kind === "error" && <p className="note-line error" role="alert">{state.message}</p>}
+      {!collapsed && state.kind === "loading" && <LensSkeleton />}
+      {!collapsed && state.kind === "error" && <p className="note-line error" role="alert">{state.message}</p>}
 
-      {data && (
+      {!collapsed && data && (
         <>
           <p className="lens-summary">{summary(data)}</p>
 
@@ -168,7 +196,7 @@ export default function BrightnessPanel({ ra, dec, target, label, onClose }: Pro
                   <Tooltip content={<SpectrumTip />} cursor={false} isAnimationActive={false} />
                   {[1, 2, 3, 4, 5, 6].map((det) => (
                     <Scatter key={det} data={spectrum.filter((p) => p.det === det)} shape={<Dot />} isAnimationActive={false}>
-                      <ErrorBar dataKey="err" direction="y" width={0} stroke={detectorColor(det)} strokeWidth={1} />
+                      <ErrorBar dataKey={logY ? "errLog" : "err"} direction="y" width={0} stroke={detectorColor(det)} strokeWidth={1} />
                     </Scatter>
                   ))}
                 </ScatterChart>

@@ -44,12 +44,23 @@ export const BrightnessSchema = z.object({
 });
 export type Brightness = z.infer<typeof BrightnessSchema>;
 
-export async function fetchBrightness(ra: number, dec: number, target: string | null, signal?: AbortSignal): Promise<Brightness> {
+// one measurement per point for the whole session: hiding, reopening or moving the lens to full screen
+// never asks the service again. A failed request is forgotten so it can be retried.
+const measured = new Map<string, Promise<Brightness>>();
+
+export function fetchBrightness(ra: number, dec: number, target: string | null): Promise<Brightness> {
   const q = `ra=${ra.toFixed(5)}&dec=${dec.toFixed(5)}${target ? `&target=${encodeURIComponent(target)}` : ""}`;
-  const body = await request(`/api/brightness?${q}`, signal);
-  const parsed = BrightnessSchema.safeParse(body);
-  if (!parsed.success) throw new ApiError("BAD_RESPONSE", "The brightness measurement came back in an unexpected shape.");
-  return parsed.data;
+  let p = measured.get(q);
+  if (!p) {
+    p = request(`/api/brightness?${q}`).then((body) => {
+      const parsed = BrightnessSchema.safeParse(body);
+      if (!parsed.success) throw new ApiError("BAD_RESPONSE", "The brightness measurement came back in an unexpected shape.");
+      return parsed.data;
+    });
+    p.catch(() => measured.delete(q));
+    measured.set(q, p);
+  }
+  return p;
 }
 
 /** Stable detector colours, ordered by wavelength (brand system tokens --chart-d1 … --chart-d6). */
@@ -70,13 +81,14 @@ export function lightCurveSeries(b: Brightness) {
   }));
 }
 
-export type SpectrumPoint = { x: number; y: number; err: number; det: number; date: string; bandwidth: number; saturated: number };
+// errLog: the error bar for a log axis, its lower end kept above zero (log of a negative is undefined)
+export type SpectrumPoint = { x: number; y: number; err: number; errLog: [number, number]; det: number; date: string; bandwidth: number; saturated: number };
 
 /** Spectrum of one time bin: every exposure is one point, at the wavelength the filter gave it. */
 export function spectrumPoints(b: Brightness, bin: number): SpectrumPoint[] {
   return b.exposures
     .filter((e) => e.bin === bin && e.flux !== null && e.fluxErr !== null && e.flux > 0)
-    .map((e) => ({ x: e.wavelengthUm, y: e.flux as number, err: e.fluxErr as number, det: e.detector, date: e.date, bandwidth: e.bandwidthUm, saturated: e.saturatedPixels }))
+    .map((e) => ({ x: e.wavelengthUm, y: e.flux as number, err: e.fluxErr as number, errLog: [Math.min(e.fluxErr as number, 0.9 * (e.flux as number)), e.fluxErr as number] as [number, number], det: e.detector, date: e.date, bandwidth: e.bandwidthUm, saturated: e.saturatedPixels }))
     .sort((a, b2) => a.x - b2.x);
 }
 

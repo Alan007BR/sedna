@@ -107,12 +107,12 @@ function wantsDrawer(attention: string): boolean {
 function MiniSpectrum({ query }: { query: Props["spectrumQuery"] }) {
   const [state, setState] = useState<{ kind: "loading" } | { kind: "error"; message: string } | { kind: "ready"; data: Brightness }>({ kind: "loading" });
   useEffect(() => {
-    const ctrl = new AbortController();
+    let live = true;
     setState({ kind: "loading" });
-    fetchBrightness(query.ra, query.dec, query.target, ctrl.signal)
-      .then((data) => setState({ kind: "ready", data }))
-      .catch((err) => { if (err.name !== "AbortError") setState({ kind: "error", message: err.message ?? "No spectrum here." }); });
-    return () => ctrl.abort();
+    fetchBrightness(query.ra, query.dec, query.target) // shared with the lens: one measurement per point
+      .then((data) => live && setState({ kind: "ready", data }))
+      .catch((err) => live && setState({ kind: "error", message: err.message ?? "No spectrum here." }));
+    return () => { live = false; };
   }, [query.ra, query.dec, query.target]);
   if (state.kind === "loading") return <p className="hud-note">Measuring the spectrum…</p>;
   if (state.kind === "error") return <p className="hud-note">{state.message}</p>;

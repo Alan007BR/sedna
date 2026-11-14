@@ -84,6 +84,38 @@ a { color: inherit; }
 .details > .eyebrow { margin-bottom: -4px; }
 .details .verdict, .details .note-line, .details .measure, .details .movers, .details .lens, .details .coach { max-width: none; width: 100%; }
 .details .lens { padding-top: 10px; }
+/* a clicked Gaia star: its usual name and nature, its Gaia motion, and links out */
+.star-card { display: grid; gap: 4px; font-size: 13px; line-height: 19px; color: var(--muted-strong); }
+.star-card p { margin: 0; }
+.star-title { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.star-title .ice { color: var(--ice); font-weight: 500; }
+.star-name { color: var(--fg); font-size: 15px; font-weight: 500; }
+.star-facts.muted { color: var(--muted); }
+.star-gaia, .star-ids { font-size: 11px; line-height: 16px; color: var(--muted); }
+.star-links { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 16px; margin-top: 2px; }
+.star-links a { color: var(--ice); text-decoration: none; font-size: 13px; min-height: 28px; display: inline-flex; align-items: center; }
+.star-links a:hover { color: var(--fg); text-decoration: underline; }
+.star-source { font-size: 11px; color: var(--muted); margin-left: auto; }
+
+/* loading: the shape of what is coming, never a spinner over the sky */
+.skeleton-line { display: block; height: 10px; width: 62%; border-radius: 2px; background: var(--line); }
+.skeleton-line.short { display: inline-block; width: 120px; height: 12px; }
+.skeleton-line.wide { width: 92%; height: 14px; }
+.skeleton-chart { position: relative; height: 150px; border-left: 1px solid var(--line-strong); border-bottom: 1px solid var(--line-strong); margin: 6px 0 0 36px; }
+.skeleton-chart span { position: absolute; left: 10px; top: -2px; font-size: 11px; color: var(--muted); }
+.skeleton-legend { display: flex; gap: 14px; margin-left: 36px; }
+.skeleton-legend i { width: 7px; height: 7px; border-radius: 50%; opacity: 0.45; }
+.lens-loading { display: grid; gap: 10px; padding-top: 4px; }
+.lens-loading-text { margin: 0; font-size: 13px; line-height: 19px; color: var(--muted-strong); }
+.lens-loading-text .mono { color: var(--fg); margin-left: 6px; }
+.lens-loading-text .muted { color: var(--muted); }
+.lens-progress { position: relative; height: 2px; overflow: hidden; background: var(--line); border-radius: 1px; }
+.lens-progress i { position: absolute; top: 0; bottom: 0; width: 30%; background: var(--ice); opacity: 0.8; animation: lens-sweep 1.6s ease-in-out infinite; }
+@keyframes lens-sweep { from { left: -30%; } to { left: 100%; } }
+@media (prefers-reduced-motion: reduce) { .lens-progress i { animation: none; left: 0; width: 100%; opacity: 0.35; } }
+.lens.collapsed { gap: 0; }
+.lens-head-summary { flex-basis: 100%; order: 3; font-size: 12px; line-height: 17px; color: var(--muted); }
+
 .measure .text { padding-left: 0; text-align: left; min-height: 30px; }
 .details .measure + .measure { margin-top: -10px; }
 .group { display: grid; gap: 4px; }

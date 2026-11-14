@@ -1,11 +1,11 @@
 {
- "voice": "en-US-AndrewNeural",
+ "voice": "en-US-EmmaNeural",
  "rate": "+6%",
  "note": "say: what the synthetic voice reads (spelled for pronunciation); text: the subtitle shown on screen",
  "lines": [
   { "id": "sky", "say": "Every six months, NASA's SPHEREx photographs the whole sky in infrared.", "text": "Every six months, NASA’s SPHEREx photographs the whole sky in infrared." },
   { "id": "films", "say": "SEDNA turns those images into films, so whatever moves stands out.", "text": "SEDNA turns those images into films, so whatever moves stands out." },
-  { "id": "search", "say": "Pick a region, and SEDNA searches it for moving worlds. It finds Mah-kay Mah-kay on its own.", "text": "Pick a region, and SEDNA searches it for moving worlds. It finds Makemake on its own." },
+  { "id": "search", "say": "Pick a region, and SEDNA searches it for moving worlds. It finds Mah-kay-mah-kay on its own.", "text": "Pick a region, and SEDNA searches it for moving worlds. It finds Makemake on its own." },
   { "id": "focus", "say": "One knob turns its motion into a distance: forty-nine A-U. J-P-L says fifty-two.", "text": "One knob turns its motion into a distance: 49 au. JPL says 52." },
   { "id": "sedna", "say": "Even Sedna, invisible in one image, appears when stacked along its orbit.", "text": "Even 90377 Sedna, invisible in one image, appears when stacked along its orbit." },
   { "id": "end", "say": "SEDNA. Sedna space dot earth.", "text": "" }

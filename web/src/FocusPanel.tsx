@@ -137,6 +137,7 @@ export default function FocusPanel({ body, seed, controls, onOpen, onProgress, h
               </li>
             ))}
           </ul>
+          <p className="note-line">To look for an unknown one in a region you choose: open the region, choose Single exposures, and press Search this visit for moving bodies.</p>
         </div>
       </section>
     );

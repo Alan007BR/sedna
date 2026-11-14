@@ -359,6 +359,20 @@ a { color: inherit; }
 .chip.clear { color: var(--fg); border-color: var(--red-text); }
 .chip.uncertain { color: var(--warn); border-color: var(--warn); }
 .focus-result .chips { align-items: center; }
+/* the field search: its candidates, numbered like the dashed rings on the stage */
+.search-result { display: grid; gap: 8px; padding-top: 4px; }
+.candidates { list-style: none; margin: 0; padding: 0; display: grid; }
+.candidates li { display: grid; grid-template-columns: 24px 1fr auto; gap: 12px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); min-height: 44px; }
+.candidates li:last-child { border-bottom: 1px solid var(--line); }
+.candidates .rank { width: 22px; height: 22px; border: 1px dashed var(--red-text); border-radius: 50%; display: grid; place-items: center; font-size: 11px; color: var(--red-text); }
+.candidates li div { display: grid; gap: 2px; min-width: 0; }
+.candidates li p { font-size: 13px; line-height: 19px; }
+.candidates li p.mono { color: var(--fg); }
+.search-result .method summary { cursor: pointer; font-size: 13px; color: var(--muted-strong); min-height: 32px; display: flex; align-items: center; }
+@media (max-width: 520px) {
+  .candidates li { grid-template-columns: 24px 1fr; }
+  .candidates li > button { grid-column: 2; justify-self: start; }
+}
 
 @media (min-width: 821px) and (max-width: 1180px) {
   .viewer { --stage: min(620px, calc(100vh - 290px), calc(100vw - 330px)); grid-template-columns: minmax(150px, 200px) var(--stage); }

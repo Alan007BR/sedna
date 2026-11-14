@@ -153,6 +153,44 @@ class NextVisitResponse(BaseModel):
     source: Literal["archive", "cache"]
 
 
+class SearchCandidate(BaseModel):
+    rank: int
+    ra: float  # at mjd, the middle of the exposures searched: where the distance focus starts from
+    dec: float
+    mjd: float
+    date: str
+    x: int  # grid pixel at the first exposure (the search map is aligned there); row 0 south
+    y: int
+    snr: float
+    halves: tuple[float, float]  # S/N in the first and second half of the exposures
+    distanceAu: float  # the trial distance that gave the best S/N
+    motionArcsec: float  # how far a body at that distance moved during the exposures
+    aboveNoise: bool  # stronger than every peak the negated search gave in this field
+    known: dict | None  # IMCCE SkyBoT: status, message, name, class, vMag, separationArcsec
+    track: list[TrackPoint]  # the position the search assumed at each exposure
+
+
+class SearchResponse(BaseModel):
+    schemaVersion: int
+    release: str
+    center: SkyPoint
+    fovArcmin: float
+    grid: dict  # size, pixelScaleArcsec
+    visit: int
+    visits: int
+    window: dict  # start, end, exposures
+    templates: int  # exposures from other visits used for the static sky
+    distancesAu: tuple[float, float]  # the range of trial distances searched
+    threshold: float
+    candidates: list[SearchCandidate]
+    noisePeaks: list[float]  # S/N of the peaks the same search gives on the negated exposures (noise alone)
+    map: str  # best S/N over all trial distances, float32 little-endian, base64, row 0 south; masked pixels 0
+    method: str
+    limit: str
+    seconds: float
+    source: Literal["archive", "cache"]
+
+
 class FollowStack(BaseModel):
     label: str
     start: str | None

@@ -135,6 +135,24 @@ await check("Makemake's field: movers, ruler, single exposures, picked point", a
   return (await page.locator(".next-visit p").first().innerText()).slice(0, 90);
 });
 
+await check("Makemake's field searched for moving bodies finds Makemake, then its distance", async (page) => {
+  await page.goto(`${APP}/?ra=199.94124&dec=21.48776&fov=6&band=1&mode=film`);
+  await sky(page);
+  await page.getByRole("button", { name: "Search this visit for moving bodies" }).click();
+  await page.waitForSelector(".search-result", { timeout: T });
+  const line = await page.locator(".candidates li").first().innerText();
+  if (!/Makemake, a known dwarf planet/.test(line)) throw new Error(`first candidate: ${line}`);
+  if (!(await page.locator(".stage svg circle[stroke-dasharray]").count())) throw new Error("no candidate ring on the search map");
+  await page.screenshot({ path: join(EVIDENCE, "demo-search-1440.png") });
+  await page.getByRole("button", { name: "Measure its distance" }).first().click();
+  await page.getByRole("tab", { name: /Focus/ }).click({ timeout: T });
+  await page.getByRole("button", { name: /Find the focus/ }).click();
+  await page.getByRole("tab", { name: /Check/ }).click({ timeout: T });
+  await page.getByRole("button", { name: /Predict the next visit/ }).click();
+  await page.waitForSelector(".next-visit .chip", { timeout: T });
+  return line.replace(/\s+/g, " ").slice(0, 90);
+});
+
 await check("a typed name says name search needs the live service", async (page) => {
   await page.goto(`${APP}/?intro=0`);
   await page.waitForSelector(".target-card", { timeout: T });

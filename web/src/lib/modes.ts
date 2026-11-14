@@ -8,7 +8,7 @@ export const MODES: { id: Mode; label: string; help: string }[] = [
   { id: "blink", label: "Blink", help: "One picture per visit, months apart, shown in turn: what changed between visits?" },
   { id: "diff", label: "Difference", help: "The last visit minus the first. Dark: there before. Bright: there now." },
   { id: "sum", label: "Sum", help: "Every visit added together: the deepest, least noisy picture." },
-  { id: "film", label: "Single exposures", help: "Every picture of one visit, minutes to days apart: what moves fast?" },
+  { id: "film", label: "Single exposures", help: "Every picture of one visit, minutes to days apart: what moves? SEDNA can search them." },
   { id: "focus", label: "Distance focus", help: "Shifts and stacks one visit for trial distances, to find how far a moving body is." },
 ];
 

@@ -34,7 +34,7 @@ from .archive import horizons
 from .follow_service import CONTROLS as FOLLOW_CONTROLS
 from .follow_service import STAMP as FOLLOW_STAMP
 from .follow_service import follow
-from .models import BrightnessResponse, FollowResponse, MoversResponse, NextVisitResponse, ResolveResponse, RulerResponse, StarResponse
+from .models import BrightnessResponse, FollowResponse, MoversResponse, NextVisitResponse, ResolveResponse, RulerResponse, SearchResponse, StarResponse
 from .movers_service import MAX_RATE_ARCSEC_H, VISIBLE_V, movers_in_field
 from .next_visit_service import DISTANCE_SPREAD as NV_SPREAD
 from .next_visit_service import MAX_EXPOSURES as NV_MAX
@@ -42,6 +42,7 @@ from .next_visit_service import REGION_ARCMIN as NV_REGION
 from .next_visit_service import next_visit
 from .science.movers import separation_arcsec, tangent_offsets_arcsec
 from .science.focus import INFINITY_AU, judge
+from .science.focus import distance_ladder as parallax_ladder
 from .science.stack import DETECTOR_RANGE_UM, PIXEL_ARCSEC, build_stack
 from .targets import TARGETS, propagate
 from .paths import CACHE_DIR
@@ -629,6 +630,81 @@ def film(ra: float = Query(..., ge=0, lt=360), dec: float = Query(..., ge=-90, l
     }
     CACHE.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload))
+    return payload
+
+
+@app.get("/api/search", response_model=SearchResponse)
+def search(ra: float = Query(..., ge=0, lt=360), dec: float = Query(..., ge=-90, le=90), fov: float = Query(6.0, ge=1.0, le=10.0), visit: int = Query(0, ge=0, le=20)):
+    """Search one visit of a field for moving bodies, with no starting point: shift-and-stack per trial distance."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    from .search_service import CANDIDATE_SNR, DETECTORS as SEARCH_DETECTORS, FIXED_SHARE, HALF_SNR, MIN_MOTION_PX, RULES, STAR_SIGMA, WINDOW_DAYS, search_field
+
+    key = hashlib.sha1(f"search|{RULES}|{SCHEMA}|{ra:.5f}|{dec:.5f}|{fov:.2f}|{visit}|{index().n}".encode()).hexdigest()
+    path = CACHE / f"{key}.json"
+    if path.exists():
+        payload = json.loads(path.read_text())
+        payload["source"] = "cache"
+        return payload
+    t0 = time.time()
+    try:
+        res = search_field(index(), ra, dec, fov_arcmin=fov, visit=visit)
+    except LookupError as err:
+        raise HTTPException(404, detail={"code": "OUT_OF_COVERAGE", "message": str(err)})
+    except ValueError:
+        raise HTTPException(422, detail={"code": "TOO_FEW_EXPOSURES", "message": "Too few usable single exposures in this visit, or too short a span, to search it. Try another visit."})
+    with ThreadPoolExecutor(4) as pool:  # name each candidate if a known body was there
+        known = list(pool.map(lambda c: known_object(c["ra"], c["dec"], c["mjd"], radius_arcsec=30.0), res.candidates))
+    noise_max = max(res.noise_peaks, default=float("-inf"))
+    ladder = [d for d in parallax_ladder() if d < INFINITY_AU]
+    ladder = [d for d in ladder if d <= res.farthest_au + 1e-6]
+    status_ok = all(k.get("status") != "unavailable" for k in known)
+    payload = {
+        "schemaVersion": SCHEMA,
+        "release": RELEASE,
+        "center": {"ra": ra, "dec": dec},
+        "fovArcmin": fov,
+        "grid": {"size": res.grid.size, "pixelScaleArcsec": PIXEL_ARCSEC},
+        "visit": res.visit,
+        "visits": res.visits,
+        "window": {"start": iso(float(res.mjd.min())), "end": iso(float(res.mjd.max())), "exposures": int(len(res.mjd))},
+        "templates": res.templates,
+        "distancesAu": (round(float(ladder[0]), 1), round(float(ladder[-1]), 1)),
+        "threshold": CANDIDATE_SNR,
+        "candidates": [
+            {
+                "rank": i + 1,
+                "ra": c["ra"],
+                "dec": c["dec"],
+                "mjd": c["mjd"],
+                "date": iso(c["mjd"]),
+                "x": c["x"],
+                "y": c["y"],
+                "snr": round(c["snr"], 1),
+                "halves": [round(v, 1) for v in c["halves"]],
+                "distanceAu": round(c["distance_au"], 1),
+                "motionArcsec": round(c["motion_arcsec"], 1),
+                "aboveNoise": bool(c["snr"] > noise_max),
+                "known": k,
+                "track": [{"mjd": t, "ra": r, "dec": d} for t, r, d in c["track"]],
+            }
+            for i, (c, k) in enumerate(zip(res.candidates, known))
+        ],
+        "noisePeaks": [round(v, 1) for v in res.noise_peaks],
+        "map": encode(np.nan_to_num(res.snr_map, nan=0.0, neginf=0.0)),
+        "method": (
+            f"Every single exposure of the densest {WINDOW_DAYS:.0f} days of this visit (detectors {SEARCH_DETECTORS[0]}-{SEARCH_DETECTORS[-1]}), with the stars removed by a static sky "
+            f"made from {res.templates} exposures of other visits, is shifted as a whole for each trial distance and stacked. Pixels near stars brighter than {STAR_SIGMA:.0f} sigma are masked. "
+            f"A candidate must reach S/N {CANDIDATE_SNR:.0f}, show in each half of the exposures (S/N {HALF_SNR}), move at least {MIN_MOTION_PX:.0f} pixels, and fade to under "
+            f"{FIXED_SHARE:.0%} of its S/N with no shift, which rules out stars that changed. The same search on the negated exposures counts what noise alone gives here."
+        ),
+        "limit": "Finds bodies about as bright as the dwarf planet Makemake (V about 17) in one visit. Fainter ones, such as 90377 Sedna (V = 20.8), stay at the level of noise unless their orbit is known.",
+        "seconds": round(time.time() - t0, 2),
+        "source": "archive",
+    }
+    if status_ok:  # a missing name is not cached, so the next request asks SkyBoT again
+        CACHE.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(payload))
     return payload
 
 

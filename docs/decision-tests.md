@@ -161,6 +161,29 @@ The distance focus needs a starting point, and someone looking at a region does 
 - **What it means.** A body as bright as Makemake is found on its own, with nothing else above 5σ and no noise peak that high. Sedna, at S/N 4–5 per visit, sits among the noise peaks: a blind search of one visit cannot pick it out. Each field takes about 6 seconds.
 - **Script:** `probes/p18_field_search.py` → `probes/p18_field_search.png`, `probes/p18_field_search.json`
 
+### The search as the product runs it
+
+"Search this visit for moving bodies", in the single exposures (`service/sedna/search_service.py`, `/api/search`). On top of the probe's method, a candidate must pass three rules, each added after a false candidate seen in the data:
+
+| Rule | Why | Seen in |
+| --- | --- | --- |
+| S/N 2.5 or more in each half of the exposures | One bad stretch of exposures can make a peak | Epsilon Indi B's field, visit 1: peaks of 5.6–7.4 with one half at 0.6–2.2 |
+| With no shift, under 50 % of its S/N when followed | A star that changed between visits (variable, or moved by its proper motion) is as strong or stronger unshifted | Barnard's Star's field, visit 1: S/N 9.8 followed, 12.2 unshifted; a random field (185.517 −25.366): 37.5 against 22.7, which passed when the limit was 60 % |
+| A body must move at least 4 pixels during the exposures | Below that a slow body cannot be told from a changed star | The same random field first came out at 459 au, moving under 4 pixels, when the limit was 2 |
+
+Makemake passes them with room to spare (halves 12.9 and 30.9; 6.8 unshifted against 33.3 followed). The same rules are applied to the negated search, so the noise count is comparable. The farthest distance searched depends on the visit's span: 293 au for Makemake's four days.
+
+| Fields searched | Searches | Candidates | Noise peaks ≥ 5σ |
+| --- | --- | --- | --- |
+| Makemake's field, visit 1 | 1 | 1: Makemake, S/N 33.3, 48.9 au; IMCCE SkyBoT names it 0.6″ away | 0 |
+| Makemake's field, visits 2 and 3 (Makemake is degrees away by then) | 2 | 0 | 0 |
+| The five challenge targets, visits 1 and 2 | 10 | 0 | 0 |
+| Random fields (seeds 5 and 11; two had too few exposures) | 30 | 0 | 1, at S/N 6.5 |
+
+- **Timing:** 3–14 seconds per search on a laptop, most of it reading about 40 exposures of the visit and up to 160 of other visits.
+- **Tests:** `service/tests/test_search.py` (a synthetic body at 50 au found within 15 % of its distance; a fixed source rejected; noise alone gives nothing).
+- **Script:** `probes/p19_search_checks.py` → `probes/p19_search_checks.json`
+
 ## Test 3 — cutouts straight from the bucket
 
 - IMAGE pixels are uncompressed big-endian float32 starting at byte 28,800 (pipeline 7.0.5), so a strip of rows is one range request.

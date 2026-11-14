@@ -80,7 +80,7 @@ export function spanLabel(m: Pick<Mover, "firstInField" | "lastInField">): strin
 }
 
 /** The service's track point for an exposure taken at ``mjd``, if the body was in the field then. */
-export function trackPointAt(m: Mover, mjd: number, toleranceDays = 0.01) {
+export function trackPointAt(m: Pick<Mover, "track">, mjd: number, toleranceDays = 0.01) {
   let best: Mover["track"][number] | null = null;
   for (const p of m.track) if (Math.abs(p.mjd - mjd) <= toleranceDays && (!best || Math.abs(p.mjd - mjd) < Math.abs(best.mjd - mjd))) best = p;
   return best;

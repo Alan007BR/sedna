@@ -83,6 +83,17 @@ await check("an unknown name says why", async (page) => {
   await page.getByText(/do not know "Ceres"/).waitFor({ timeout: T });
 });
 
+await check("a field search runs live and finds Makemake on its own", async () => {
+  const t0 = Date.now();
+  // asked of the service directly, not through the site, so the prepared copy is never used
+  const r = await fetch(`${API}/api/search?ra=199.94124&dec=21.48776&fov=6&visit=0`);
+  const body = await r.json();
+  if (!r.ok) throw new Error(`status ${r.status}: ${JSON.stringify(body).slice(0, 120)}`);
+  const top = body.candidates[0];
+  if (!top || top.known?.name !== "Makemake") throw new Error(`first candidate: ${JSON.stringify(top ?? null).slice(0, 160)}`);
+  return `${body.candidates.length} candidate(s), Makemake at S/N ${top.snr}, ${top.distanceAu} au, noise peaks ${body.noisePeaks.length}, ${((Date.now() - t0) / 1000).toFixed(1)} s (${body.source})`;
+});
+
 await check("single exposures of a 15' field arrive (a large, streamed response)", async () => {
   const t0 = Date.now();
   const r = await fetch(`${API}/api/film?ra=199.94124&dec=21.48776&fov=15&visit=0`);

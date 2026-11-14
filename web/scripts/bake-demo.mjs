@@ -28,7 +28,7 @@ const responses = {};
 const cases = [];
 
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, reducedMotion: "reduce" });
 page.on("response", async (res) => {
   const url = new URL(res.url());
   if (!url.pathname.startsWith("/api/") || res.status() !== 200) return;
@@ -44,12 +44,12 @@ page.on("response", async (res) => {
 });
 
 const settle = async () => {
-  await page.waitForFunction(() => !document.querySelector("[role=status]")?.textContent?.match(/Reading|Checking|Measuring|Predicting|Working out/), null, { timeout: LONG }).catch(() => {});
+  await page.waitForFunction(() => !document.querySelector("[role=status]")?.textContent?.match(/Reading|Checking|Measuring|Predicting|Working out|Searching/), null, { timeout: LONG }).catch(() => {});
   await page.waitForTimeout(800);
 };
 const start = async () => {
   await page.goto(`${APP}/`);
-  await page.waitForSelector(".examples.missions button:not([disabled])", { timeout: LONG });
+  await page.waitForSelector(".landing-missions button:not([disabled])", { timeout: LONG });
 };
 const coachIs = (re) => page.waitForFunction((src) => new RegExp(src).test(document.querySelector(".coach-text")?.textContent ?? ""), re.source, { timeout: LONG });
 const playOnce = async () => {
@@ -73,7 +73,7 @@ for (const name of ["Barnard's Star", "WISE 0855-0714", "Epsilon Indi B", "RW Au
 // 1b. the namesake: 90377 Sedna stacked along its orbit
 step("90377 Sedna");
 await start();
-await page.getByRole("button", { name: /named after 90377 Sedna/ }).click();
+await page.getByRole("button", { name: /Find 90377 Sedna/ }).click();
 await page.waitForSelector(".follow .lens-summary", { timeout: LONG });
 cases.push({ id: "sedna", label: "90377 Sedna", url: new URL(page.url()).search });
 
@@ -155,6 +155,21 @@ await page.getByRole("tab", { name: /Check/ }).click({ timeout: LONG });
 await page.getByRole("button", { name: /Predict the next visit/ }).click();
 await page.waitForSelector(".next-visit .chip", { timeout: LONG });
 cases.push({ id: "makemake-field", label: "Makemake's field, 8 June 2025 (199.94124 21.48776)", url: field });
+
+// 5. the same field searched with no starting point: the search finds Makemake, then its distance and next visit
+step("Makemake's field: search the visit for moving bodies");
+const filmUrl = "?ra=199.94124&dec=21.48776&fov=6&band=1&mode=film";
+await page.goto(`${APP}/${filmUrl}`);
+await page.waitForSelector(".stage canvas:not([hidden])", { timeout: LONG });
+await page.getByRole("button", { name: "Search this visit for moving bodies" }).click();
+await page.waitForSelector(".search-result", { timeout: LONG });
+await page.getByRole("button", { name: "Measure its distance" }).first().click();
+await page.getByRole("tab", { name: /Focus/ }).click({ timeout: LONG });
+await page.getByRole("button", { name: /Find the focus/ }).click();
+await page.getByRole("tab", { name: /Check/ }).click({ timeout: LONG });
+await page.getByRole("button", { name: /Predict the next visit/ }).click();
+await page.waitForSelector(".next-visit .chip", { timeout: LONG });
+cases.push({ id: "makemake-search", label: "Makemake's field searched for moving bodies", url: filmUrl });
 
 await browser.close();
 

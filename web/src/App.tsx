@@ -865,7 +865,7 @@ export default function App() {
 
       <footer className="credits">
         <span>
-          Data: NASA SPHEREx Level-2 spectral images (DR1 and QR3), read from the public archive bucket{health ? `, through ${health}` : ""}. Star positions: ESA Gaia DR3. Logo and animations made with AI assistance.
+          Data: NASA SPHEREx Level-2 spectral images (DR1 and QR3), read from the public archive bucket{health ? `, through ${health}` : ""}. Star positions: ESA Gaia DR3.
         </span>
         <span className="mono">
           {stack && status.kind === "ready" ? `${stack.exposuresRead} exposures · ${stack.source === "cache" ? "prepared result" : `read in ${stack.seconds}s`} · ` : ""}

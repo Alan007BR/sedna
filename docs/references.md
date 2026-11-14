@@ -59,6 +59,7 @@ The distance focus and the region search are shift-and-stack, also called digita
 | Brown, Trujillo & Rabinowitz 2004, ApJ 617, 645, "Discovery of a Candidate Inner Oort Cloud Planetoid" | The discovery of 90377 Sedna, the tool's namesake | https://doi.org/10.1086/422095 |
 | Trujillo & Sheppard 2014, Nature 507, 471, "A Sedna-like body with a perihelion of 80 astronomical units" | A second Sedna-like body, and the orbital clustering that points to a distant planet | https://doi.org/10.1038/nature13156 |
 | Batygin & Brown 2016, AJ 151, 22, "Evidence for a Distant Giant Planet in the Solar System" | The Planet Nine hypothesis behind the challenge's Planet X | https://doi.org/10.3847/0004-6256/151/2/22 |
+| Brown & Batygin 2021, AJ 162, 219, "The Orbit of Planet Nine" | The estimate SEDNA quotes for Planet Nine's distance: semi-major axis about 380 au, perihelion about 300 au | https://doi.org/10.3847/1538-3881/ac2056 |
 
 ## Software (all open source)
 

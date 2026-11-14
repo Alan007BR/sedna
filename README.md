@@ -15,6 +15,7 @@
   <a href="docs/video/sedna-demo-30s.mp4">Watch the 30-second demo</a> ·
   <a href="#try-it-in-two-minutes">Try it</a> ·
   <a href="#what-we-checked-on-real-data">Results</a> ·
+  <a href="#and-planet-x">Planet X</a> ·
   <a href="#run-it-yourself">Run it yourself</a>
 </p>
 
@@ -63,6 +64,16 @@ Press **F** for full screen. Every view is a link you can share.
 | The challenge targets behave as expected | Epsilon Indi B's motion within 0.07″ of Gaia DR3; WISE 0855 shows only at 4.4–5 µm; RW Aurigae faded 0.5–0.75 mag in a year; R Draconis's period 235 days (AAVSO: 246) | [target matrix](docs/target-matrix.md) |
 
 **Limits, as the tool states them:** the model assumes a circular orbit in the ecliptic, so an eccentric orbit (Pluto) can be up to 40 % off; Eris-faint bodies (V = 18.6) are found only sometimes; Sedna-faint ones need their orbit; the region search covers fields up to 10′.
+
+## And Planet X?
+
+The latest estimate puts Planet Nine at a perihelion of about 300 au and a semi-major axis of about 380 au (Brown & Batygin 2021). SPHEREx photographs the whole sky every six months, so such a planet is in its images. SEDNA shows, on real data, what finding it takes:
+
+- **Between visits it jumps.** Six months apart, a body at 300 au moves 25′ and one at 500 au moves 15′, several fields of view, so a blink of fixed coordinates cannot catch it. The parallax ruler shows this on any field.
+- **Within a visit it barely moves:** 3–6 pixels in a week at 300 au. The region search reaches about 300 to 500 au, depending on how long the visit lasts.
+- **It is faint.** Sedna (V = 20.8, 83 au) needs 161 exposures stacked along its known orbit to appear, and a distant planet seen by reflected sunlight is expected to be fainter still.
+
+So the path is to link visits months apart with the same distance model, as the next-visit check already does for Makemake (found again 208 days later, 2.8° away), and to stack more data as SPHEREx keeps observing. SEDNA states this limit instead of promising a discovery.
 
 ## Everything it does
 

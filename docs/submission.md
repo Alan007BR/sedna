@@ -17,6 +17,8 @@ SEDNA: Explore the Unseen
 
 SEDNA is a public web tool that turns NASA SPHEREx's repeated all-sky infrared images into short films of any patch of sky, so anything that moved or changed stands out, and then helps measure it. Type a name or coordinates and SEDNA aligns every SPHEREx visit of that field, blinks or differences them, and marks every known star (ESA Gaia DR3) and known asteroid or comet (IMCCE SkyBoT), so a person can tell a real change from a known source. It answers the challenge as a WiseView for SPHEREx, and adds what blinking cannot do for distant worlds: a distance focus. Turn one knob and SEDNA shifts and stacks the single exposures for each trial distance; at the right one, a moving body snaps into a sharp point (Makemake: 48.9 au against 52.4 au from JPL Horizons). Applied to a whole region with no starting point, it searches for moving worlds: Makemake and Haumea come out on their own in each of their visits, and 40 searches of fields with no known body give no false candidate. The same idea finds 90377 Sedna, invisible in any single exposure, at S/N 9.8 in 161 stacked along its orbit. Everything runs on real data, every claim is checked against catalogues, and misses are reported as misses.
 
+Why SEDNA: 90377 Sedna was discovered on 14 November 2003 by comparing pictures of the same patch of sky taken hours apart, the same idea this challenge is built on, and this hackathon began on the same date, 23 years later. Its distant, detached orbit is one of the clues behind the search for a Planet X. SEDNA is named after it, and finds it in SPHEREx data.
+
 ## Link to Project Demo
 
 [YouTube link, 28.5 seconds]

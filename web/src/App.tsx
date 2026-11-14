@@ -130,6 +130,15 @@ export default function App() {
     });
   }, []);
 
+  // a short mission link (?mission=walk) has no position yet: start the mission once the targets are known
+  const missionLink = useRef(view ? null : missionById(new URLSearchParams(location.search).get("mission")) ?? null);
+  useEffect(() => {
+    const m = missionLink.current;
+    if (!m || !targets.length) return;
+    missionLink.current = null;
+    startMission(m);
+  }, [targets]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     fetchTargets().then(setTargets).catch(() => setTargets([]));
     fetchHealth()

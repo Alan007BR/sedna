@@ -105,6 +105,14 @@ await check("mission 1 played to the end", async (page) => {
   await page.getByText(/gives itself away/).waitFor({ timeout: T });
 });
 
+await check("short mission links start their mission", async (page) => {
+  for (const m of ["walk", "infrared", "distance"]) {
+    await page.goto(`${APP}/?mission=${m}&intro=0`);
+    await page.waitForSelector(".coach-text", { timeout: T });
+    if (!new URL(page.url()).searchParams.get("ra")) throw new Error(`?mission=${m} did not open its field`);
+  }
+});
+
 await check("mission 3 and the next-visit check", async (page) => {
   await page.goto(`${APP}/`);
   await page.getByRole("button", { name: /Measure a dwarf planet/ }).click({ timeout: T });

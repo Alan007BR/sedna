@@ -2,75 +2,117 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/brand/logos/svg/sedna-horizontal-tagline-on-dark.svg">
     <source media="(prefers-color-scheme: light)" srcset="docs/brand/logos/svg/sedna-horizontal-tagline-on-light.svg">
-    <img src="docs/brand/logos/svg/sedna-horizontal-tagline-on-light.svg" alt="SEDNA — Explore the Unseen." width="640">
+    <img src="docs/brand/logos/svg/sedna-horizontal-tagline-on-light.svg" alt="SEDNA — Explore the Unseen." width="560">
   </picture>
 </p>
 
+<p align="center"><strong>Watch the infrared sky change, and find what moves in it.</strong></p>
+
 <p align="center">
   <a href="https://sednaspace.earth"><strong>Open SEDNA</strong></a> ·
-  <a href="#what-it-does">Features</a> ·
-  <a href="#validation">Validation</a> ·
-  <a href="#run-it-locally">Run locally</a> ·
-  <a href="docs/deploy.md">Deployment</a> ·
-  <a href="docs/brand/README.md">Brand identity</a>
+  <a href="docs/video/sedna-demo-30s.mp4">Watch the 30-second demo</a> ·
+  <a href="#try-it-in-two-minutes">Try it</a> ·
+  <a href="#what-we-checked-on-real-data">Results</a> ·
+  <a href="#run-it-yourself">Run it yourself</a>
 </p>
 
-**Watch the SPHEREx sky change over time, and focus it by distance.** Live at **https://sednaspace.earth** (also https://sednaspace.vercel.app).
+SEDNA is a free web tool that turns NASA SPHEREx's repeated infrared images of the whole sky into short films of any patch of sky. Anything that moved or changed stands out, and SEDNA helps measure it: how fast, how far, how bright. Nothing to install: it runs in the browser, on real NASA data, at **https://sednaspace.earth**.
 
-SEDNA is a web tool for the NASA Space Apps Challenge 2026 challenge *Planet X and SPHEREx*. Type a sky position or a name, and SEDNA shows NASA SPHEREx images of that patch as a short sequence in time, so anything that moved or changed stands out.
+Built by team Deneb for the NASA Space Apps Challenge 2026, challenge *Planet X and SPHEREx*.
 
-It adds one thing no blink viewer has: a **distance focus**. A world in the outer Solar System jumps out of the frame between SPHEREx visits, so comparing fixed coordinates only shows a point that vanished. Its day-to-day motion is set almost entirely by its distance. Turn the focus knob, and SEDNA shifts and stacks the single exposures for each trial distance: at the right one, the body becomes a sharp point and the stars smear away.
+![The SEDNA start page: a search box, the five challenge targets and three one-minute missions, over a real SPHEREx field](docs/readme/start.png)
 
-Named after 90377 Sedna, found on 14 November 2003 by comparing images of the same patch of sky.
+## Try it in two minutes
 
-## What it does
+| Click | What you will see |
+| --- | --- |
+| [**Watch a star walk**](https://sednaspace.earth/?mission=walk) | A one-minute guided mission: Barnard's Star moves between SPHEREx visits, while the stars around it stay put. |
+| [**Search a region for moving worlds**](https://sednaspace.earth/?ra=199.94124&dec=21.48776&fov=6&band=1&mode=film), then press *Search this visit for moving bodies* | SEDNA searches the whole field on its own and finds the dwarf planet Makemake, with its distance. |
+| [**Measure a distance with one knob**](https://sednaspace.earth/?ra=199.94124&dec=21.48776&fov=6&band=2&mode=focus&target=makemake), then open *2 · Focus* and press *Find the focus* | Makemake snaps into a sharp point at 48.9 au. *3 · Check* compares it with JPL Horizons: 52.4 au. |
+| [**Find 90377 Sedna**](https://sednaspace.earth/?ra=60.70000&dec=8.60000&fov=6&band=2&mode=follow&target=sedna) | The world this tool is named after: invisible in any single exposure, it appears when 161 are stacked along its orbit. |
+| **Type anything** on the start page | A name ("Orion Nebula", "Betelgeuse", "M42") or coordinates ("83.82 -5.39"). |
 
-- **One screen to start.** The start page fits one screen on laptops and phones: a real 30′ SPHEREx field drifting slowly behind, Makemake crossing a field in ten single exposures, the search, the five challenge targets and the missions, each with its own real image. The brand intro from the [motion kit](docs/brand/motion/) plays once a session and can be skipped; the kit's orbiting mark covers the longer waits. Nothing moves for visitors who ask for reduced motion.
-- **Find Sedna.** 90377 Sedna, 83 au away at magnitude 20.8, is invisible in any single SPHEREx exposure (S/N 0.7). Stacked along its orbit over 161 exposures, with the stars removed using the same sky from other visits, it appears as a point at S/N 9.8, in each of its three visits; none of 200 control tracks comes close. The page says plainly why this works (the orbit is known) and what it means for fainter, unknown worlds.
-- **Three one-minute missions** for a first visit: watch Barnard's Star walk, see WISE 0855 appear only in the infrared, and measure Makemake's distance with the focus knob. Each step advances only when the person has done it, every claim is a measured result, and a mission can be shared as a link (`?mission=walk`).
-- **Any position or name, fast.** Type coordinates, or any object's name as people write it ("Orion Nebula", "m42", "betelgeuse"): CDS Sesame finds it in SIMBAD, NED or VizieR, through its mirrors, and fast stars are moved by their proper motion to SPHEREx's dates. SEDNA keeps its own index of every SPHEREx exposure (272,963 detector-1 frames, April 2025 to October 2026), built from the public archive bucket: a lookup takes about 40 ms and does not depend on the archive's search services, and a new 6′ field (about 400 exposures) is read in about 10 seconds.
-- **Aligned visits.** Exposures are resampled onto one north-up grid and averaged per visit and detector, with one brightness stretch for all dates.
-- **Compare.** Blink, difference (later minus earlier) and sum; the six detectors from 0.75 to 5 µm; fields of view from 4 to 15 arcmin.
-- **Full screen.** "Full screen" (or F) turns the view into a sky map you drag and zoom around the pointer, up to 24 screen pixels per SPHEREx pixel. The data window keeps a sharp edge inside a blurred, darkened mirror of itself that never carries values, and every control is a small glass widget at the edges that fades while the sky plays. Marks keep their screen size at every zoom. Full screen is the whole tool, not a reduced one: all five modes, detectors, fields of view and overlays are in the widgets, and clicking a star, the brightness lens, the known-mover notes, the parallax ruler, the missions and the single-exposure, distance-focus and Sedna panels open in a details drawer beside the sky.
-- **Known or new?** Gaia DR3 stars drawn at their position on each date, a click tells you whether a point is a known star, and SIMBAD adds what it is: its usual name, type, spectral type, distance and other designations (Barnard's Star: BY Dra variable, M4V, 1.83 pc, HIP 87937, GJ 699), with links to its SIMBAD page and its Gaia DR3 record. Most faint stars are only in Gaia, and the card says so. For every field, SEDNA asks IMCCE SkyBoT which known asteroids, comets and dwarf planets crossed it during each visit, explains that moving bodies smear out of visit averages, and opens the single exposures at the moment of the crossing with the body ringed.
-- **Brightness and spectrum.** Click any star (or open a variable star) to measure it in every exposure: how its brightness changed over time, per detector, and its 0.75–5 µm spectrum on a chosen date. Each exposure's wavelength comes from the pipeline's own spectral map, and each spectral channel is compared only with itself, so a spectrum full of molecular bands is not mistaken for a change. Saturated stars are measured in their wings. Every value can be downloaded as CSV.
-- **Single exposures.** Every exposure of a visit in time order. Pause, click any point, and measure its distance with the focus.
-- **Search a region for moving bodies.** No starting point needed: SEDNA removes the stars, shifts every exposure of the visit as a whole for each trial distance and stacks, so a body at that distance adds up to a point wherever it is. The search map shows where something stands out, each candidate gets its distance and IMCCE SkyBoT's name if it is known, and one click sends it to the distance focus. The same search on the negated exposures says how strong noise alone gets in that field. Without being told where they are, it found Makemake and Haumea in each of their three visits, Pluto and Eris once each (8 of 11 visits, within 10 % of JPL Horizons' distances), with no other candidate; on the five challenge fields (two visits each) and 30 random fields it reports nothing. On Makemake's field, SkyBoT names the candidate Makemake, 0.6″ away. It finds bodies down to about Eris's brightness (V = 18.6); Sedna-faint ones stay at noise level unless their orbit is known.
-- **Distance focus.** Three steps: watch the point walk among the stars, turn the knob until it snaps into focus, check the distance against JPL Horizons.
-- **Next visit.** From the focus distance, SEDNA predicts where the body will be at SPHEREx's next visit, months later and degrees away, then follows the whole predicted region in that visit's exposures. Makemake is found again 2.5″ and 2.8″ from JPL Horizons' position, although the prediction itself was 16′ and 8′ off. Misses are reported as misses.
-- **Parallax ruler.** On any field and pair of visits, shows how far a body at 50, 100, 300 or 500 au, or a star at 2 pc, would move: the reason a blink of fixed coordinates cannot catch a distant world.
-- **Shareable and embeddable.** The URL reproduces the view, and there is a direct link to the same sky in WiseView. "Copy embed code" gives an iframe of the view (`/embed/?ra=...&dec=...`), which fits a 400 × 300 frame: the sky, a minimal timeline and a link back.
-- **Works offline.** The site tries the data service and, if it does not answer, runs on prepared cases recorded from it: the three missions, the five challenge targets, the distance controls, and Makemake's field picked by hand and searched for moving bodies. The footer says which one is answering; a view that is not prepared says so and lists the prepared ones.
+Press **F** for full screen. Every view is a link you can share.
 
-## Validation
+## How it works, in three ideas
 
-- **The five challenge targets:** see [docs/target-matrix.md](docs/target-matrix.md). Epsilon Indi B's motion is measured within 0.07″ of Gaia DR3 over 1.37 years; WISE 0855 appears and moves only at 4.4–5 µm; RW Aurigae's infrared glow faded by 0.5–0.75 mag in a year; R Draconis's 246-day pulsation is recovered from its unsaturated wings.
-- **The distance focus:** see [docs/decision-tests.md](docs/decision-tests.md). Haumea 48.9 au against 49.4 au from JPL Horizons, Pluto 34.2 against 35.5, Makemake 48.9 against 52.4. Eris is too faint in single exposures, and an eccentric orbit can throw the estimate off by up to 40 %; the tool says so with a confidence verdict.
+<table>
+  <tr>
+    <td width="33%" valign="top"><img src="docs/readme/blink.png" alt="Barnard's Star in full screen, difference mode: dark where it was, bright where it is now"></td>
+    <td width="33%" valign="top"><img src="docs/readme/focus.png" alt="The distance focus on Makemake: the knob at 48.9 au and a sharp point at the cross"></td>
+    <td width="33%" valign="top"><img src="docs/readme/search.png" alt="The search map of Makemake's field: one bright spot, ringed, and the candidate's line below"></td>
+  </tr>
+  <tr>
+    <td valign="top"><strong>1. Blink.</strong> Every SPHEREx visit of a patch of sky, aligned and shown in turn. Known stars (ESA Gaia DR3) and known asteroids (IMCCE SkyBoT) are marked, so a real change can be told from a known source.</td>
+    <td valign="top"><strong>2. Focus by distance.</strong> A distant world jumps out of the frame between visits, but within one visit its motion depends almost only on its distance. SEDNA shifts and stacks the single exposures for each trial distance: at the right one, the body becomes a sharp point.</td>
+    <td valign="top"><strong>3. Search a region.</strong> The same idea for a whole field at once, with no starting point. The search map lights up where a moving body stands out, and the same search on negated images tells how strong noise alone gets there.</td>
+  </tr>
+</table>
 
-## Run it locally
+## What we checked on real data
 
-Requirements: Python 3.12+ and Node 22+.
+| Claim | Result | Where |
+| --- | --- | --- |
+| The distance focus measures distances | Makemake 48.9 au (JPL Horizons: 52.4), Haumea 48.9 (49.4), Pluto 34.2 (35.5) | [decision tests](docs/decision-tests.md#the-distance-focus-as-the-product-runs-it) |
+| The region search finds bodies without being told where | Makemake and Haumea in each of their three visits, Pluto and Eris once each: 8 of 11 visits, distances within 10 % of JPL Horizons | [decision tests](docs/decision-tests.md#the-search-as-the-product-runs-it) |
+| …and does not invent them | No candidate in 40 searches of fields with no known body: the five challenge fields and 30 random fields | [probes/p19](probes/p19_search_checks.json) |
+| The next visit can be predicted | Makemake found again 208 days later, 2.5″ from JPL Horizons, though it had moved 2.8° | [decision tests](docs/decision-tests.md#next-visit-check) |
+| SPHEREx sees Sedna | S/N 9.8 from 161 exposures stacked along its orbit; none of 200 control tracks comes close | [decision tests](docs/decision-tests.md#90377-sedna-the-namesake) |
+| The challenge targets behave as expected | Epsilon Indi B's motion within 0.07″ of Gaia DR3; WISE 0855 shows only at 4.4–5 µm; RW Aurigae faded 0.5–0.75 mag in a year; R Draconis's period 235 days (AAVSO: 246) | [target matrix](docs/target-matrix.md) |
+
+**Limits, as the tool states them:** the model assumes a circular orbit in the ecliptic, so an eccentric orbit (Pluto) can be up to 40 % off; Eris-faint bodies (V = 18.6) are found only sometimes; Sedna-faint ones need their orbit; the region search covers fields up to 10′.
+
+## Everything it does
+
+<details>
+<summary>All features</summary>
+
+- **Start page.** Fits one screen on laptops and phones: a real 30′ SPHEREx field drifting behind, Makemake crossing a field in ten single exposures, the search box, the five challenge targets and three missions. The brand intro plays once a session and can be skipped; nothing moves for visitors who ask for reduced motion.
+- **Any position or name.** Coordinates, or any object's name as people write it: CDS Sesame finds it in SIMBAD, NED or VizieR, and fast stars are moved by their proper motion to SPHEREx's dates. SEDNA keeps its own index of every SPHEREx exposure (272,963 detector-1 frames, April 2025 to October 2026), so a lookup takes about 40 ms and a new 6′ field (about 400 exposures) is read in about 10 seconds.
+- **Compare.** Blink, difference (later minus earlier) and sum; six detectors from 0.75 to 5 µm; fields of view from 4 to 15 arcmin; one brightness stretch for all dates.
+- **Full screen.** A sky map you drag and zoom, with every control as a small widget at the edges and the panels in a drawer beside the sky.
+- **Known or new?** Click a star: Gaia DR3 says whether it is known, and SIMBAD what it is. For every field, IMCCE SkyBoT lists the known asteroids, comets and dwarf planets that crossed it, and SEDNA opens the single exposures at that moment with the body ringed.
+- **Brightness and spectrum.** Click a star to measure it in every exposure: its brightness over time per detector and its 0.75–5 µm spectrum on a chosen date, with each exposure's wavelength from the pipeline's own map. Saturated stars are measured in their wings. Values download as CSV.
+- **Single exposures.** Every exposure of a visit in time order. Pause, click a point, and measure its distance.
+- **Region search.** *Search this visit for moving bodies*: the stars are removed, every exposure is shifted for each trial distance and stacked, and the search map shows where something stands out. Each candidate gets a distance, SkyBoT's name if it is known, and one click to the distance focus.
+- **Distance focus.** Three steps: watch the point walk, turn the knob until it snaps into focus, check the distance against JPL Horizons.
+- **Next visit.** From the focus distance, SEDNA predicts where the body will be at SPHEREx's next visit, months later and degrees away, and searches that region.
+- **Find Sedna.** 90377 Sedna stacked along its JPL Horizons orbit, visit by visit and all together, with control tracks.
+- **Parallax ruler.** How far a body at 50 to 500 au, or a star at 2 pc, would move between two visits: why a blink of fixed coordinates cannot catch a distant world.
+- **Missions.** Three one-minute guided missions (`?mission=walk`, `?mission=infrared`, `?mission=distance`) that advance only when the person has done each step.
+- **Share and embed.** The URL reproduces the view; *Copy embed code* gives an iframe that fits 400 × 300; a link opens the same sky in WiseView.
+- **Works offline.** If the data service does not answer, the site runs on prepared cases recorded from it, and says so.
+
+</details>
+
+## Run it yourself
+
+You need Python 3.12+ and Node 22+.
 
 ```sh
-# data service
+# 1. the data service (reads SPHEREx straight from NASA's public bucket on AWS)
 python -m venv .venv
-.venv/Scripts/pip install -r service/requirements.txt      # on macOS/Linux: .venv/bin/pip
+.venv/Scripts/pip install -r service/requirements.txt     # macOS/Linux: .venv/bin/pip
 cd service
 ../.venv/Scripts/python -m uvicorn sedna.api:app --port 8000
 
-# web app, in another terminal
+# 2. the web app, in another terminal
 cd web
 npm install
-npm run dev        # http://127.0.0.1:5173
+npm run dev                                                # http://127.0.0.1:5173
 ```
 
-No data service at hand? `npm run dev:demo` runs the whole site on the prepared cases in `web/public/demo`, and so does a static build (`npm run build`, then `npm run preview`) when the service is offline. The published site answers the prepared cases from these files even when the service is up, and asks the service only for anything else; [docs/deploy.md](docs/deploy.md) describes the deployment (site on Vercel, data service on AWS Lambda).
+No data service? `npm run dev:demo` runs the whole site on the prepared cases in `web/public/demo`.
 
-To record the prepared cases again, run the data service and `npm run dev`, then `npm run bake:demo`: it drives the app through every demo flow and saves the service's answers. `node scripts/check-demo.mjs [app url]` then checks every prepared flow, the start page fitting one screen, the intro, the offline message and the embed, with the service stopped.
+Tests: `npm test` in `web/`, and `../.venv/Scripts/python -m pytest` in `service/`. [docs/deploy.md](docs/deploy.md) explains the published setup (site on Vercel, data service on AWS Lambda) and the scripts that check it.
 
-The start page's images are rendered from the prepared cases and one 30′ stack, with the app's own stretch: run the data service, then `.venv/Scripts/python web/scripts/render-landing.py` from the repository root. `node scripts/shot-landing.mjs [app url] [folder]` takes screenshots at eight screen sizes and says whether each fits without scrolling.
+<details>
+<summary>More: prepared cases, start page images, the sky index</summary>
 
-The folded sky index ships in `data/index/compact.npz`. To rebuild it from the bucket:
+- **Prepared cases.** With the data service and `npm run dev` running, `node scripts/bake-search.mjs` adds the region-search case to `web/public/demo`, and `node scripts/check-demo.mjs [app url]` checks every prepared flow with the service stopped.
+- **Start page images.** Rendered from SPHEREx data with the app's own stretch: run the data service, then `.venv/Scripts/python web/scripts/render-landing.py` from the repository root.
+- **Demo video.** `web/scripts/make-narration.py` makes the narration and `web/scripts/record-demo.mjs` records the published site scene by scene.
+- **The sky index** ships in `data/index/compact.npz`. To rebuild it from the bucket:
 
 ```sh
 cd service
@@ -79,31 +121,29 @@ cd service
 ../.venv/Scripts/python -c "from sedna.archive.skyindex import SkyIndex; SkyIndex.build_compact()"
 ```
 
-## How it is built
+</details>
 
-| Part | Folder | What it does |
-| --- | --- | --- |
-| Archive access | `service/sedna/archive/` | Range reads from the public SPHEREx bucket, the sky index, JPL Horizons, Gaia DR3 |
-| Science | `service/sedna/science/` | Alignment, visit stacks, the distance focus, centroids and brightness |
-| Data service | `service/sedna/api.py` | FastAPI endpoints for stacks, films, focus and catalogues |
-| Web app | `web/` | React and Vite |
-| Probes | `probes/` | The scripts behind every result in `docs/` |
+## What is where
+
+| Folder | What it holds |
+| --- | --- |
+| [`service/`](service/) | The data service in Python (FastAPI, astropy): reading the SPHEREx bucket, the sky index, the science (alignment, stacks, distance focus, region search, brightness) |
+| [`web/`](web/) | The web app (React, Vite, TypeScript), its prepared cases and the scripts that check and record it |
+| [`probes/`](probes/) | The scripts behind every result in `docs/`, with their outputs |
+| [`docs/`](docs/) | [Decision tests](docs/decision-tests.md), [target matrix](docs/target-matrix.md), [references](docs/references.md), [deployment](docs/deploy.md), the [project page text](docs/submission.md), the [brand identity](docs/brand/README.md) and the [demo video](docs/video/) |
+| [`deploy/aws/`](deploy/aws/) | The container and script that publish the data service on AWS Lambda |
 
 ## Data and credits
 
-Every reference, with links and DOIs, including the published methods behind the distance focus and the region search: [docs/references.md](docs/references.md).
+- **NASA SPHEREx** Level-2 spectral images, Data Release 1 ([10.26131/IRSA678](https://doi.org/10.26131/IRSA678)) and Quick Release 3 ([10.26131/IRSA662](https://doi.org/10.26131/IRSA662)), from the NASA/IPAC Infrared Science Archive, read from the AWS Open Data bucket `nasa-irsa-spherex`. This work makes use of data products from the Spectro-Photometer for the History of the Universe, Epoch of Reionization and Ices Explorer (SPHEREx), which is a joint project of the Jet Propulsion Laboratory and the California Institute of Technology, and is funded by the National Aeronautics and Space Administration.
+- **ESA Gaia DR3**, through the ESA Gaia archive. This work has made use of data from the European Space Agency (ESA) mission Gaia (https://www.cosmos.esa.int/gaia), processed by the Gaia Data Processing and Analysis Consortium (DPAC, https://www.cosmos.esa.int/web/gaia/dpac/consortium).
+- **JPL Horizons** and **IMCCE SkyBoT** for Solar System bodies; **CDS** SIMBAD, VizieR and Sesame; **AAVSO VSX**; **WiseView** as the model for the viewer.
 
-- **NASA SPHEREx** Level-2 spectral images, Data Release 1 and Quick Release 3, from the NASA/IPAC Infrared Science Archive, read from the AWS Open Data bucket `nasa-irsa-spherex`. DOIs: [10.26131/IRSA678](https://doi.org/10.26131/IRSA678) (DR1 Spectral Images) and [10.26131/IRSA662](https://doi.org/10.26131/IRSA662) (QR3).
-  This work makes use of data products from the Spectro-Photometer for the History of the Universe, Epoch of Reionization and Ices Explorer (SPHEREx), which is a joint project of the Jet Propulsion Laboratory and the California Institute of Technology, and is funded by the National Aeronautics and Space Administration.
-- **ESA Gaia DR3**, through the ESA Gaia archive.
-- **JPL Horizons** (SPHEREx as observer, `500@-163182`) and **IMCCE SkyBoT** for Solar System bodies.
-- **AAVSO VSX** for the variable stars' positions and periods.
-- **WiseView** (Caselden & Westin) as the model for the viewer's controls.
-- Software: Astropy, Astroquery, NumPy, SciPy, Matplotlib, FastAPI, React, Vite, IBM Plex fonts.
+Every reference, with links and DOIs, including the published methods behind the distance focus and the region search: **[docs/references.md](docs/references.md)**.
 
 ## Use of AI
 
-Built with AI coding assistants. See [AI_USAGE.md](AI_USAGE.md).
+Built with AI coding assistants (Claude Code and Codex) under the team's direction. The idea of focusing the sky by distance is the team's; the AI helped check that it was feasible, and wrote much of the code with the team. The logo and animations were made with AI assistance, and the demo video's narration voice is synthetic. Details: [AI_USAGE.md](AI_USAGE.md).
 
 ## License
 

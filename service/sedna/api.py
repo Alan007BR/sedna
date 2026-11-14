@@ -1,0 +1,334 @@
+"""SEDNA data service: sky position in, aligned SPHEREx frames out.
+
+Run from the ``service`` folder:  uvicorn sedna.api:app --port 8000
+
+Code written with AI assistance (Claude); see AI_USAGE.md.
+"""
+from __future__ import annotations
+
+import base64
+import hashlib
+import json
+import time
+from pathlib import Path
+
+import numpy as np
+import requests
+from astropy.time import Time
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
+
+from .archive.skyindex import SkyIndex
+from .science import parallax
+from .focus_service import focus_body
+from .science.focus import INFINITY_AU, judge
+from .science.stack import DETECTOR_RANGE_UM, PIXEL_ARCSEC, build_stack
+from .targets import TARGETS, propagate
+
+SCHEMA = 1
+CACHE = Path(__file__).resolve().parents[2] / "data" / "cache" / "stacks"
+CITATION = (
+    "This work makes use of data products from the Spectro-Photometer for the History of the Universe, "
+    "Epoch of Reionization and Ices Explorer (SPHEREx), which is a joint project of the Jet Propulsion Laboratory "
+    "and the California Institute of Technology, and is funded by the National Aeronautics and Space Administration."
+)
+
+app = FastAPI(title="SEDNA", version="0.1")
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET"], allow_headers=["*"])
+_index: SkyIndex | None = None
+
+
+def index() -> SkyIndex:
+    global _index
+    if _index is None:
+        _index = SkyIndex.load()
+    return _index
+
+
+def encode(image: np.ndarray) -> str:
+    return base64.b64encode(np.ascontiguousarray(image, dtype="<f4").tobytes()).decode("ascii")
+
+
+def iso(mjd: float) -> str:
+    return Time(mjd, format="mjd").iso[:16] + "Z"
+
+
+@app.get("/api/health")
+def health():
+    ix = index()
+    return {"schemaVersion": SCHEMA, "exposures": ix.n, "dataFrom": iso(float(ix.a["mjd"][0])), "dataThrough": iso(float(ix.a["mjd"][-1]))}
+
+
+@app.get("/api/targets")
+def targets():
+    return {"schemaVersion": SCHEMA, "targets": [{"id": k, **{f: v for f, v in t.items()}} for k, t in TARGETS.items()]}
+
+
+@app.get("/api/stack")
+def stack(
+    ra: float = Query(..., ge=0, lt=360),
+    dec: float = Query(..., ge=-90, le=90),
+    fov: float = Query(6.0, ge=1.0, le=30.0, description="field of view in arcmin"),
+):
+    key = hashlib.sha1(f"{SCHEMA}|{ra:.5f}|{dec:.5f}|{fov:.2f}|{index().n}".encode()).hexdigest()
+    path = CACHE / f"{key}.json"
+    if path.exists():
+        payload = json.loads(path.read_text())
+        payload["source"] = "cache"
+        return payload
+    t0 = time.time()
+    st = build_stack(index(), ra, dec, fov_arcmin=fov)
+    if not st.frames:
+        raise HTTPException(404, detail={"code": "OUT_OF_COVERAGE", "message": "SPHEREx has no usable exposure of this position in the indexed data."})
+    visits = []
+    for vi in sorted({f.visit for f in st.frames}):
+        fr = [f for f in st.frames if f.visit == vi]
+        visits.append(
+            {
+                "index": vi,
+                "start": iso(min(f.mjd_start for f in fr)),
+                "end": iso(max(f.mjd_end for f in fr)),
+                "midMjd": float(np.mean([(f.mjd_start + f.mjd_end) / 2 for f in fr])),
+                "detectors": sorted(f.det for f in fr),
+            }
+        )
+    payload = {
+        "schemaVersion": SCHEMA,
+        "center": {"ra": ra, "dec": dec},
+        "grid": {"size": st.grid.size, "pixelScaleArcsec": PIXEL_ARCSEC, "orientation": "north up, east left; row 0 is south"},
+        "unit": "MJy/sr, median background removed per exposure",
+        "visits": visits,
+        "frames": [
+            {
+                "visit": f.visit,
+                "detector": f.det,
+                "wavelengthUm": DETECTOR_RANGE_UM[f.det],
+                "start": iso(f.mjd_start),
+                "end": iso(f.mjd_end),
+                "exposures": f.n_exposures,
+                "data": encode(f.image),
+            }
+            for f in st.frames
+        ],
+        "exposuresRequested": st.n_requested,
+        "exposuresRead": st.n_read,
+        "seconds": round(time.time() - t0, 2),
+        "release": "SPHEREx DR1 + QR3 (pipeline R7), read from the public AWS bucket",
+        "citation": CITATION,
+        "source": "archive",
+    }
+    CACHE.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload))
+    return payload
+
+
+@app.get("/api/position")
+def position(target: str, mjd: float):
+    """Position of a built-in target propagated to a date with its catalogue proper motion."""
+    if target not in TARGETS:
+        raise HTTPException(404, detail={"code": "TARGET_NOT_FOUND", "message": f"Unknown target {target}."})
+    ra, dec = propagate(TARGETS[target], mjd)
+    return {"schemaVersion": SCHEMA, "ra": ra, "dec": dec}
+
+
+@app.get("/api/gaia")
+def gaia(ra: float, dec: float, fov: float = 6.0):
+    """Gaia DR3 sources in the field with proper motions, for the overlay and the known-star verdict."""
+    radius = fov / 60 / 2 * 1.5
+    adql = (
+        "SELECT TOP 150 source_id, ra, dec, pmra, pmdec, parallax, phot_g_mean_mag FROM gaiadr3.gaia_source "
+        f"WHERE 1=CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', {ra}, {dec}, {radius})) AND phot_g_mean_mag < 16.5 ORDER BY phot_g_mean_mag"
+    )
+    try:
+        r = requests.get("https://gea.esac.esa.int/tap-server/tap/sync", params={"REQUEST": "doQuery", "LANG": "ADQL", "FORMAT": "json", "QUERY": adql}, timeout=30)
+        r.raise_for_status()
+        body = r.json()
+    except Exception as err:
+        raise HTTPException(503, detail={"code": "CATALOG_UNAVAILABLE", "message": "The Gaia archive did not answer.", "cause": repr(err)[:120]})
+    cols = [c["name"] for c in body["metadata"]]
+    rows = [dict(zip(cols, row)) for row in body["data"]]
+    return {
+        "schemaVersion": SCHEMA,
+        "catalog": "Gaia DR3",
+        "refEpoch": 2016.0,
+        "sources": [
+            {"id": str(s["source_id"]), "ra": s["ra"], "dec": s["dec"], "pmRa": s["pmra"], "pmDec": s["pmdec"], "parallax": s["parallax"], "g": s["phot_g_mean_mag"]}
+            for s in rows
+        ],
+    }
+
+
+@app.get("/api/parallax-ruler")
+def parallax_ruler(ra: float, dec: float, mjd_a: float, mjd_b: float):
+    """Where a body seen at (ra, dec) on date A would be on date B, for a ladder of distances."""
+    distances = [40, 50, 75, 100, 150, 200, 300, 500, 800, 1500, 206265 * 2.0]
+    ras, decs = parallax.predict_track(ra, dec, mjd_a, np.array(distances), np.array([mjd_b]))
+    return {
+        "schemaVersion": SCHEMA,
+        "assumption": "circular, prograde orbit in the ecliptic; observer at the geocentre",
+        "marks": [{"distanceAu": d, "ra": float(ras[i, 0]), "dec": float(decs[i, 0])} for i, d in enumerate(distances)],
+    }
+
+
+@app.get("/api/focus")
+def focus(body: str, visit: int = Query(0, ge=0, le=20)):
+    """Distance focus on a known body: stacks for a ladder of trial distances, plus the JPL Horizons distance."""
+    target = TARGETS.get(body)
+    if not target or "horizons" not in target:
+        raise HTTPException(404, detail={"code": "TARGET_NOT_FOUND", "message": "The distance focus has controls for Makemake, Haumea, Pluto and Eris."})
+    key = hashlib.sha1(f"focus2|{SCHEMA}|{body}|{visit}|{index().n}".encode()).hexdigest()
+    path = CACHE / f"{key}.json"
+    if path.exists():
+        payload = json.loads(path.read_text())
+        payload["source"] = "cache"
+        return payload
+    t0 = time.time()
+    try:
+        res, truth = focus_body(index(), target["horizons"], visit=visit)
+    except LookupError as err:
+        raise HTTPException(404, detail={"code": "OUT_OF_COVERAGE", "message": str(err)})
+    except ValueError:
+        raise HTTPException(422, detail={"code": "TOO_FEW_EXPOSURES", "message": "Too few usable exposures around this body in the chosen visit. Try another visit."})
+    level, reason = judge(res)
+    payload = {
+        "schemaVersion": SCHEMA,
+        "body": body,
+        "name": target["name"],
+        "seed": {"ra": res.seed[0], "dec": res.seed[1], "mjd": res.seed[2], "date": iso(res.seed[2])},
+        "distancesAu": [None if d >= INFINITY_AU else round(float(d), 2) for d in res.distances],
+        "scores": [None if not np.isfinite(s) else round(float(s), 2) for s in res.scores],
+        "best": res.best,
+        "bestDistanceAu": round(float(res.distances[res.best]), 1),
+        "halfRangeAu": [round(res.half_range[0], 1), round(res.half_range[1], 1)],
+        "confidence": level,
+        "confidenceReason": reason,
+        "trueDistanceAu": round(truth["distanceAu"], 1),
+        "visit": truth["visit"],
+        "visits": truth["visits"],
+        "exposures": res.n_exposures,
+        "spanDays": round(float(res.mjd.max() - res.mjd.min()), 1),
+        "start": iso(float(res.mjd.min())),
+        "end": iso(float(res.mjd.max())),
+        "detectors": truth["detectors"],
+        "stampSize": int(res.stacks.shape[1]),
+        "stacks": encode(np.nan_to_num(res.stacks, nan=0.0)),
+        "film": {
+            "dates": [iso(float(m)) for m in res.mjd],
+            "static": encode(np.nan_to_num(res.film_static, nan=0.0)),
+            "follow": encode(np.nan_to_num(res.film_follow, nan=0.0)),
+        },
+        "unit": "each exposure divided by its own noise, then median-stacked",
+        "assumption": "The body is assumed to follow a circular, prograde orbit in the ecliptic. Distances come out within about 10% for such orbits and up to 40% off for eccentric ones.",
+        "seconds": round(time.time() - t0, 2),
+        "source": "archive",
+    }
+    CACHE.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload))
+    return payload
+
+
+def known_object(ra: float, dec: float, mjd: float, radius_arcsec: float = 40.0) -> dict:
+    """Ask IMCCE SkyBoT whether a known Solar System object was at this position at this time."""
+    epoch = Time(mjd, format="mjd").isot
+    try:
+        r = requests.get(
+            "https://ssp.imcce.fr/webservices/skybot/api/conesearch.php",
+            params={"-ep": epoch, "-ra": ra, "-dec": dec, "-rd": radius_arcsec / 3600, "-mime": "json", "-output": "object", "-loc": "500", "-filter": "120", "-objFilter": "111", "-from": "SEDNA", "-refsys": "EQJ2000"},
+            timeout=25,
+        )
+        rows = r.json() if r.ok and r.text.strip().startswith("[") else []
+    except Exception:
+        return {"status": "unavailable", "message": "The known-object service (IMCCE SkyBoT) did not answer."}
+    if not rows:
+        return {"status": "none", "message": f"No known asteroid or comet within {radius_arcsec:.0f} arcsec at that time (IMCCE SkyBoT)."}
+    best = min(rows, key=lambda o: float(o.get("d (arcsec)", 1e9)))
+    return {
+        "status": "known",
+        "name": str(best.get("Name", "")).strip(),
+        "number": best.get("Num"),
+        "class": best.get("Class"),
+        "vMag": best.get("VMag (mag)"),
+        "separationArcsec": best.get("d (arcsec)"),
+        "message": "A known object was here at that time (IMCCE SkyBoT).",
+    }
+
+
+@app.get("/api/film")
+def film(ra: float = Query(..., ge=0, lt=360), dec: float = Query(..., ge=-90, le=90), fov: float = Query(6.0, ge=1.0, le=15.0), visit: int = Query(0, ge=0, le=20)):
+    """Single exposures of one visit, in time order: the view in which a moving body can be picked."""
+    from .science.stack import build_film
+
+    key = hashlib.sha1(f"film|{SCHEMA}|{ra:.5f}|{dec:.5f}|{fov:.2f}|{visit}|{index().n}".encode()).hexdigest()
+    path = CACHE / f"{key}.json"
+    if path.exists():
+        return json.loads(path.read_text())
+    grid, n_visits, used, frames = build_film(index(), ra, dec, fov_arcmin=fov, visit=visit)
+    if not frames:
+        raise HTTPException(404, detail={"code": "OUT_OF_COVERAGE", "message": "No usable single exposures of this field in this visit."})
+    payload = {
+        "schemaVersion": SCHEMA,
+        "center": {"ra": ra, "dec": dec},
+        "grid": {"size": grid.size, "pixelScaleArcsec": PIXEL_ARCSEC},
+        "visit": used,
+        "visits": n_visits,
+        "frames": [{"mjd": f["mjd"], "date": iso(f["mjd"]), "detector": f["det"], "obsid": f["obsid"]} for f in frames],
+        "data": encode(np.nan_to_num(np.array([f["image"] for f in frames]), nan=0.0)),
+        "unit": "each exposure divided by its own noise",
+    }
+    CACHE.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload))
+    return payload
+
+
+@app.get("/api/focus-at")
+def focus_at(ra: float = Query(..., ge=0, lt=360), dec: float = Query(..., ge=-90, le=90), mjd: float = Query(..., ge=60000, le=70000), window: float = Query(6.0, ge=1.0, le=20.0)):
+    """Distance focus seeded on any point the user picked in one exposure."""
+    from .science.focus import run_focus
+
+    key = hashlib.sha1(f"focus-at|{SCHEMA}|{ra:.5f}|{dec:.5f}|{mjd:.4f}|{window}|{index().n}".encode()).hexdigest()
+    path = CACHE / f"{key}.json"
+    if path.exists():
+        return json.loads(path.read_text())
+    t0 = time.time()
+    hits = index().lookup(ra, dec, detectors=(1, 2, 3, 4), mjd_range=(mjd - window / 2, mjd + window / 2))
+    try:
+        res = run_focus(hits, ra, dec, mjd)
+    except ValueError:
+        raise HTTPException(422, detail={"code": "TOO_FEW_EXPOSURES", "message": "Too few single exposures around that moment to measure a distance. Pick the point in another exposure."})
+    level, reason = judge(res)
+    payload = {
+        "schemaVersion": SCHEMA,
+        "body": None,
+        "name": "the point you picked",
+        "seed": {"ra": ra, "dec": dec, "mjd": mjd, "date": iso(mjd)},
+        "distancesAu": [None if d >= INFINITY_AU else round(float(d), 2) for d in res.distances],
+        "scores": [None if not np.isfinite(s) else round(float(s), 2) for s in res.scores],
+        "best": res.best,
+        "bestDistanceAu": round(float(res.distances[res.best]), 1),
+        "halfRangeAu": [round(res.half_range[0], 1), round(res.half_range[1], 1)],
+        "confidence": level,
+        "confidenceReason": reason,
+        "trueDistanceAu": None,
+        "known": known_object(ra, dec, mjd),
+        "visit": 0,
+        "visits": 1,
+        "exposures": res.n_exposures,
+        "spanDays": round(float(res.mjd.max() - res.mjd.min()), 1),
+        "start": iso(float(res.mjd.min())),
+        "end": iso(float(res.mjd.max())),
+        "detectors": [1, 2, 3, 4],
+        "stampSize": int(res.stacks.shape[1]),
+        "stacks": encode(np.nan_to_num(res.stacks, nan=0.0)),
+        "film": {
+            "dates": [iso(float(m)) for m in res.mjd],
+            "static": encode(np.nan_to_num(res.film_static, nan=0.0)),
+            "follow": encode(np.nan_to_num(res.film_follow, nan=0.0)),
+        },
+        "unit": "each exposure divided by its own noise, then median-stacked",
+        "assumption": "The body is assumed to follow a circular, prograde orbit in the ecliptic. Distances come out within about 10% for such orbits and up to 40% off for eccentric ones.",
+        "seconds": round(time.time() - t0, 2),
+        "source": "archive",
+    }
+    CACHE.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload))
+    return payload

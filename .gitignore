@@ -1,0 +1,25 @@
+# Environments and dependencies
+.venv/
+__pycache__/
+*.py[cod]
+web/node_modules/
+web/dist/
+
+# Data: the per-week index files and caches can be rebuilt from the public bucket.
+# data/index/compact.npz (the folded sky index, ~16 MB) is kept so the tool runs out of the box.
+data/index/*.jsonl
+data/cache/
+data/*.log
+data/*.txt
+
+# Secrets and local settings
+.env
+.env.*
+.claude/settings.local.json
+
+# OS and editors
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/

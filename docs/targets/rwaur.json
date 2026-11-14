@@ -1,0 +1,208 @@
+{
+ "target": "rwaur",
+ "name": "RW Aurigae",
+ "wing_px": [
+  3.0,
+  7.0
+ ],
+ "frames": [
+  {
+   "det": 1,
+   "mjd": 60920.744502190006,
+   "date": "2025-09-02",
+   "exposures": 19,
+   "core_saturated_px": 0,
+   "delta_mag": -0.0,
+   "calibration_ratio": 1.0,
+   "calibration_error": 0.0,
+   "n_refs": 23
+  },
+  {
+   "det": 1,
+   "mjd": 61107.166512948505,
+   "date": "2026-03-08",
+   "exposures": 19,
+   "core_saturated_px": 0,
+   "delta_mag": -0.10328518717212158,
+   "calibration_ratio": 0.9851419061767783,
+   "calibration_error": 0.004474665418068087,
+   "n_refs": 23
+  },
+  {
+   "det": 1,
+   "mjd": 61289.001414488,
+   "date": "2026-09-06",
+   "exposures": 18,
+   "core_saturated_px": 0,
+   "delta_mag": -0.2112718323130237,
+   "calibration_ratio": 1.0054672551279529,
+   "calibration_error": 0.0026736015087380264,
+   "n_refs": 23
+  },
+  {
+   "det": 2,
+   "mjd": 60927.533008706494,
+   "date": "2025-09-09",
+   "exposures": 18,
+   "core_saturated_px": 0,
+   "delta_mag": -0.0,
+   "calibration_ratio": 1.0,
+   "calibration_error": 0.0,
+   "n_refs": 23
+  },
+  {
+   "det": 2,
+   "mjd": 61104.211857664995,
+   "date": "2026-03-05",
+   "exposures": 19,
+   "core_saturated_px": 0,
+   "delta_mag": -0.25752304581911406,
+   "calibration_ratio": 0.9812857084398092,
+   "calibration_error": 0.0030671009845859784,
+   "n_refs": 23
+  },
+  {
+   "det": 2,
+   "mjd": 61295.858228087,
+   "date": "2026-09-12",
+   "exposures": 18,
+   "core_saturated_px": 0,
+   "delta_mag": -0.22315814590467384,
+   "calibration_ratio": 0.9928404268439779,
+   "calibration_error": 0.003937900909396245,
+   "n_refs": 23
+  },
+  {
+   "det": 3,
+   "mjd": 60933.955433348005,
+   "date": "2025-09-15",
+   "exposures": 18,
+   "core_saturated_px": 0,
+   "delta_mag": -0.0,
+   "calibration_ratio": 1.0,
+   "calibration_error": 0.0,
+   "n_refs": 23
+  },
+  {
+   "det": 3,
+   "mjd": 61096.6421558245,
+   "date": "2026-02-25",
+   "exposures": 19,
+   "core_saturated_px": 0,
+   "delta_mag": -0.12195995800435962,
+   "calibration_ratio": 1.0112889722047538,
+   "calibration_error": 0.004989665571541611,
+   "n_refs": 23
+  },
+  {
+   "det": 3,
+   "mjd": 61298.097409864,
+   "date": "2026-09-15",
+   "exposures": 18,
+   "core_saturated_px": 0,
+   "delta_mag": -0.048273306219707705,
+   "calibration_ratio": 1.0174106606224917,
+   "calibration_error": 0.0035384404194272,
+   "n_refs": 23
+  },
+  {
+   "det": 4,
+   "mjd": 60920.744502196,
+   "date": "2025-09-02",
+   "exposures": 19,
+   "core_saturated_px": 0,
+   "delta_mag": -0.0,
+   "calibration_ratio": 1.0,
+   "calibration_error": 0.0,
+   "n_refs": 22
+  },
+  {
+   "det": 4,
+   "mjd": 61107.166512948505,
+   "date": "2026-03-08",
+   "exposures": 19,
+   "core_saturated_px": 0,
+   "delta_mag": 0.19672962219531742,
+   "calibration_ratio": 1.0231071817062003,
+   "calibration_error": 0.00535817580188555,
+   "n_refs": 22
+  },
+  {
+   "det": 4,
+   "mjd": 61289.001414488,
+   "date": "2026-09-06",
+   "exposures": 18,
+   "core_saturated_px": 0,
+   "delta_mag": 0.5318912189398282,
+   "calibration_ratio": 0.998307779523806,
+   "calibration_error": 0.0060923530061124795,
+   "n_refs": 22
+  },
+  {
+   "det": 5,
+   "mjd": 60927.533008706494,
+   "date": "2025-09-09",
+   "exposures": 18,
+   "core_saturated_px": 0,
+   "delta_mag": -0.0,
+   "calibration_ratio": 1.0,
+   "calibration_error": 0.0,
+   "n_refs": 22
+  },
+  {
+   "det": 5,
+   "mjd": 61104.211857664995,
+   "date": "2026-03-05",
+   "exposures": 19,
+   "core_saturated_px": 0,
+   "delta_mag": 0.19626773338763376,
+   "calibration_ratio": 0.971800653912543,
+   "calibration_error": 0.0056836957998846966,
+   "n_refs": 21
+  },
+  {
+   "det": 5,
+   "mjd": 61295.858228087,
+   "date": "2026-09-12",
+   "exposures": 18,
+   "core_saturated_px": 0,
+   "delta_mag": 0.7261350620436477,
+   "calibration_ratio": 0.9790591767053621,
+   "calibration_error": 0.005066653262715575,
+   "n_refs": 22
+  },
+  {
+   "det": 6,
+   "mjd": 60933.955433348005,
+   "date": "2025-09-15",
+   "exposures": 18,
+   "core_saturated_px": 0,
+   "delta_mag": -0.0,
+   "calibration_ratio": 1.0,
+   "calibration_error": 0.0,
+   "n_refs": 18
+  },
+  {
+   "det": 6,
+   "mjd": 61096.6421558305,
+   "date": "2026-02-25",
+   "exposures": 18,
+   "core_saturated_px": 0,
+   "delta_mag": 0.40397476170969643,
+   "calibration_ratio": 1.0040810488072476,
+   "calibration_error": 0.012504184741574793,
+   "n_refs": 18
+  },
+  {
+   "det": 6,
+   "mjd": 61298.097409864,
+   "date": "2026-09-15",
+   "exposures": 16,
+   "core_saturated_px": 0,
+   "delta_mag": 0.7451744621389567,
+   "calibration_ratio": 0.9966583590871289,
+   "calibration_error": 0.008825863719545841,
+   "n_refs": 17
+  }
+ ]
+}

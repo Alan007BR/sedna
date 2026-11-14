@@ -129,6 +129,38 @@ Can SPHEREx see the world this tool is named after? Sedna is 83 au away and shin
 - **What it means.** SPHEREx sees Sedna when its exposures are stacked along a known orbit. Finding a body this faint and still unknown needs its track first, which is what the distance focus does for brighter bodies. A hypothetical Planet Nine is expected to be fainter still in reflected light; SEDNA states that limit instead of promising it.
 - **Script:** `probes/p16_sedna.py` → `probes/p16_sedna.png`, `probes/p16_sedna.json`; in the product: `service/sedna/follow_service.py`, `/api/follow?body=sedna`, "Find Sedna" on the start page.
 
+## The distance focus on Sedna
+
+Can the distance focus measure how far Sedna is, without its orbit? Stacking along JPL's track (above) already uses the answer; here only the starting point comes from JPL, as if a prediction said where to look.
+
+- **Method.** For each visit, start at Sedna's position in the first exposure, remove the stars as above, and sweep the 72 trial distances from 25 to 600 au along the tracks the parallax model predicts. Control: the same sweep from 100 empty starting points 1–4′ away. Each control keeps its highest peak over all distances, since the sweep also picks its best distance.
+
+| Visit | Exposures | Days | JPL Horizons (au) | Focus (au) | Half-maximum range | Peak S/N | Controls as high or higher |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | 52 | 20.6 | 83.2 | **83.7** | 64–131 | 5.4 | 2 of 100 |
+| 2 | 52 | 26.8 | 82.6 | 104.7 | 45–214 | 5.1 | 26 of 100 |
+| 3 | 57 | 16.6 | 83.0 | **80.0** | 70–84 | 4.7 | 0 of 100 |
+
+- **Visit 2 gives no distance.** Star residuals left by the subtraction reach S/N 291 on some control tracks, so a peak of 5.1 means nothing there. For the same reason the three visits are not combined: 15 of 100 combined controls reach the combined peak.
+- **What it means.** Started from the right place, the distance focus finds Sedna's distance within 1–4 % in two of three visits, at S/N 5, the edge of detection.
+- **Script:** `probes/p17_sedna_focus.py` → `probes/p17_sedna_focus.png`, `probes/p17_sedna_focus.json`
+
+## Searching a whole field, without clicking
+
+The distance focus needs a starting point, and someone looking at a region does not know where an unseen body is. Within a few arcminutes, a distant body moves the same way anywhere in the field, so the whole field can be shifted for each trial distance and stacked: a body at that distance adds up to a point wherever it is.
+
+- **Method.** One visit's exposures (densest six days), stars removed with a static sky from the other visits. Pixels where the static sky is brighter than 4σ are masked, with 2 pixels around them. Trial distances where a body would move less than 2 pixels in the window are skipped, since it could not be told from a star residual. For each of the 72 distances the shifted exposures are stacked with outlier rejection and smoothed 3 × 3; the best S/N over all distances, per pixel, is the detection map. The same search on the negated residuals, where no real source exists, counts the peaks noise alone gives.
+
+| Field (6′) | Visit | Exposures | Known body in the map | Its rank | Peaks ≥ 5σ | Noise peaks ≥ 5σ |
+| --- | --- | --- | --- | --- | --- | --- |
+| Makemake | 1 | 39 over 4.0 d | S/N 32.8 at 48.9 au (JPL 52.4) | 1 | 1 | 0 |
+| Sedna, field off-centre by 1.5′ | 1 | 42 over 5.8 d | S/N 4.3 at 105 au (JPL 83) | 2 | 0 | 0 |
+| Sedna, same offset | 3 | 30 over 5.1 d | S/N 2.4 | not found | 0 | 1 |
+
+- **How the rules were set.** Without the star mask and the minimum motion, residuals of fixed stars came out as candidates at 300–600 au.
+- **What it means.** A body as bright as Makemake is found on its own, with nothing else above 5σ and no noise peak that high. Sedna, at S/N 4–5 per visit, sits among the noise peaks: a blind search of one visit cannot pick it out. Each field takes about 6 seconds.
+- **Script:** `probes/p18_field_search.py` → `probes/p18_field_search.png`, `probes/p18_field_search.json`
+
 ## Test 3 — cutouts straight from the bucket
 
 - IMAGE pixels are uncompressed big-endian float32 starting at byte 28,800 (pipeline 7.0.5), so a strip of rows is one range request.

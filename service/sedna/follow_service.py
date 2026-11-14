@@ -56,7 +56,12 @@ def snr(stack: np.ndarray | None) -> float:
     return float(box[c, c] / noise) if noise > 0 else float("nan")
 
 
-def follow(index: SkyIndex, ident: str, detectors=REFLECTED, workers: int = WORKERS, seed: int = 3) -> dict:
+def residual_visits(index: SkyIndex, ident: str, detectors=REFLECTED, workers: int = WORKERS):
+    """Every exposure of the body's visits on a fixed grid per visit, minus a static sky made from other visits.
+
+    Returns (visits, prepared, track, ephemeris): ``prepared[v]`` holds the visit's grid and its (hit, residual)
+    pairs in units of each exposure's noise; ``track`` maps each hit to the body's JPL Horizons position.
+    """
     visits = body_visits(index, ident, detectors=(1, 2, 3, 4, 5, 6))
     visits = [[h for h in v if h.det in detectors] for v in visits]
     visits = [v for v in visits if len(v) >= 3]
@@ -65,9 +70,6 @@ def follow(index: SkyIndex, ident: str, detectors=REFLECTED, workers: int = WORK
     hits = [h for v in visits for h in v]
     eph = horizons.at_times(ident, [h.mjd for h in hits])
     track = {id(h): (float(eph["ra"][i]), float(eph["dec"][i])) for i, h in enumerate(hits)}
-    rng = np.random.default_rng(seed)
-    angles = rng.uniform(0, 2 * np.pi, CONTROLS)
-    radii = rng.uniform(60, 240, CONTROLS)
 
     def on_grid(h, grid, centre):
         try:
@@ -95,6 +97,14 @@ def follow(index: SkyIndex, ident: str, detectors=REFLECTED, workers: int = WORK
                 static[det] = np.nanmedian(np.array(planes), axis=0)
         usable = [(h, p - static[h.det]) for h, p in zip(visit, own) if p is not None and h.det in static]
         prepared.append({"grid": grid, "usable": usable, "templates": len(others)})
+    return visits, prepared, track, eph
+
+
+def follow(index: SkyIndex, ident: str, detectors=REFLECTED, workers: int = WORKERS, seed: int = 3) -> dict:
+    visits, prepared, track, eph = residual_visits(index, ident, detectors, workers)
+    rng = np.random.default_rng(seed)
+    angles = rng.uniform(0, 2 * np.pi, CONTROLS)
+    radii = rng.uniform(60, 240, CONTROLS)
 
     c = STAMP // 2
     yy, xx = np.mgrid[-c : c + 1, -c : c + 1]

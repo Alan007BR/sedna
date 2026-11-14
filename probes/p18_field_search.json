@@ -1,0 +1,128 @@
+[
+ {
+  "field": "Makemake",
+  "ra": 199.94124,
+  "dec": 21.48776,
+  "visit": 1,
+  "visits": 3,
+  "exposures": 39,
+  "days": 4.01,
+  "candidates": [
+   {
+    "x": 29,
+    "y": 29,
+    "snr": 32.76,
+    "distance_au": 48.9
+   },
+   {
+    "x": 29,
+    "y": 58,
+    "snr": 4.1,
+    "distance_au": 80.1
+   }
+  ],
+  "known_body": null,
+  "noise_peaks_at_or_above": {
+   "5": 0,
+   "6": 0,
+   "7": 0,
+   "8": 0
+  },
+  "real_peaks_at_or_above": {
+   "5": 1,
+   "6": 1,
+   "7": 1,
+   "8": 1
+  }
+ },
+ {
+  "field": "Sedna (visit 1)",
+  "ra": 61.788477390661434,
+  "dec": 8.832683333333334,
+  "visit": 1,
+  "visits": 3,
+  "exposures": 42,
+  "days": 5.84,
+  "candidates": [
+   {
+    "x": 55,
+    "y": 33,
+    "snr": 4.41,
+    "distance_au": 171.3
+   },
+   {
+    "x": 42,
+    "y": 35,
+    "snr": 4.32,
+    "distance_au": 104.7
+   }
+  ],
+  "known_body": {
+   "x": 42,
+   "y": 36,
+   "snr_near": 4.32,
+   "distance_near_au": 104.7,
+   "rank": 2
+  },
+  "noise_peaks_at_or_above": {
+   "5": 0,
+   "6": 0,
+   "7": 0,
+   "8": 0
+  },
+  "real_peaks_at_or_above": {
+   "5": 0,
+   "6": 0,
+   "7": 0,
+   "8": 0
+  }
+ },
+ {
+  "field": "Sedna (visit 3)",
+  "ra": 62.393595793202614,
+  "dec": 8.972633333333333,
+  "visit": 3,
+  "visits": 3,
+  "exposures": 30,
+  "days": 5.1,
+  "candidates": [
+   {
+    "x": 53,
+    "y": 37,
+    "snr": 4.25,
+    "distance_au": 214.3
+   },
+   {
+    "x": 52,
+    "y": 51,
+    "snr": 4.06,
+    "distance_au": 70.0
+   },
+   {
+    "x": 19,
+    "y": 53,
+    "snr": 4.0,
+    "distance_au": 114.5
+   }
+  ],
+  "known_body": {
+   "x": 42,
+   "y": 36,
+   "snr_near": 2.36,
+   "distance_near_au": 29.9,
+   "rank": 4
+  },
+  "noise_peaks_at_or_above": {
+   "5": 1,
+   "6": 0,
+   "7": 0,
+   "8": 0
+  },
+  "real_peaks_at_or_above": {
+   "5": 0,
+   "6": 0,
+   "7": 0,
+   "8": 0
+  }
+ }
+]

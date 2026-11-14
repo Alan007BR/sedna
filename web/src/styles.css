@@ -109,6 +109,16 @@ a { color: inherit; }
 .coach-dots li.done { background: var(--muted-strong); border-color: var(--muted-strong); }
 .coach-dots li.now { background: var(--red-text); border-color: var(--red-text); }
 .coach-text { margin: 0; font-size: 15px; line-height: 23px; color: var(--fg); }
+/* embed: only the sky, a minimal timeline and a way back, inside an iframe as small as 400 x 300 */
+.embed { height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto; justify-items: center; gap: 4px; padding: 6px 8px 4px; overflow: hidden; }
+.embed .caption { font-size: 10px; line-height: 14px; }
+.embed .stage { width: auto; height: 100%; max-width: 100%; aspect-ratio: 1; cursor: default; }
+.embed-bar { width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; }
+.embed .play { width: 32px; height: 32px; }
+.embed .track { height: 34px; }
+.embed .tick { font-size: 10px; }
+.embed-bar .text { min-height: 32px; font-size: 12px; white-space: nowrap; }
+.embed-credit { margin: 0; font-size: 10px; line-height: 12px; color: var(--muted); }
 .next-visit { display: grid; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
 .next-visit .stage.small { width: min(100%, 420px); cursor: default; justify-self: center; }
 .chart-legend i.hollow.ice { border-color: var(--ice); }

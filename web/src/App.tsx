@@ -1,7 +1,6 @@
 // SEDNA: type coordinates, watch the SPHEREx sky change over time.
 // Code written with AI assistance (Claude); see AI_USAGE.md.
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import BrightnessPanel from "./BrightnessPanel";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import FilmPanel, { type Seed } from "./FilmPanel";
 import FocusPanel, { type FocusStep } from "./FocusPanel";
 import MissionCoach from "./MissionCoach";
@@ -12,6 +11,7 @@ import { formatSexagesimal, gridToSky, mjdToYear, parseTarget, skyToGrid } from 
 import { advance, missionById, MISSIONS, type Mission, type MissionContext } from "./lib/missions";
 import { fetchMovers } from "./lib/movers";
 import { fetchRuler } from "./lib/prediction";
+import { onSourceChange, type Active } from "./lib/transport";
 import { differenceLimit, mean, renderDifference, renderFrame, sharedLimits, subtract } from "./lib/render";
 
 type Mode = "blink" | "diff" | "sum" | "film" | "focus";
@@ -36,7 +36,11 @@ const DETECTORS = [
   { id: 5, range: "3.79–4.45 µm" },
   { id: 6, range: "4.40–5.03 µm" },
 ];
+// the brightness lens brings the chart library; load it only when someone opens the lens
+const BrightnessPanel = lazy(() => import("./BrightnessPanel"));
 const FOVS = [4, 6, 10, 15];
+// the embed shell: /embed/ (or ?embed=1) shows only the sky, a minimal timeline and a link back
+const IS_EMBED = /\/embed\/?$/.test(location.pathname) || new URLSearchParams(location.search).get("embed") === "1";
 
 function readView(): View | null {
   const p = new URLSearchParams(location.search);
@@ -87,6 +91,9 @@ export default function App() {
   const [readout, setReadout] = useState<string | null>(null);
   const [picked, setPicked] = useState<GaiaSource | null>(null);
   const [health, setHealth] = useState<string | null>(null);
+  const [source, setSource] = useState<Active | null>(null);
+  const [copied, setCopied] = useState<"link" | "embed" | null>(null);
+  useEffect(() => onSourceChange(setSource), []);
   const [seed, setSeed] = useState<Seed | null>(null);
   const [movers, setMovers] = useState<MoversState>({ kind: "loading" });
   const [clickSky, setClickSky] = useState<{ ra: number; dec: number; star: boolean } | null>(null);
@@ -133,6 +140,7 @@ export default function App() {
         setStackGen((g) => g + 1);
         setStatus({ kind: "ready" });
         setEpoch(0);
+        if (IS_EMBED && !matchMedia("(prefers-reduced-motion: reduce)").matches) setPlaying(true);
       })
       .catch((err) => {
         if (err.name === "AbortError") return;
@@ -240,6 +248,23 @@ export default function App() {
     setFocusProgress(null);
     setInput(t.name);
     openTarget(t, { mode: m.start.mode, det: m.start.det, fov: m.start.fov, mission: m.id });
+  }
+
+  function copy(what: "link" | "embed", text: string) {
+    navigator.clipboard?.writeText(text).then(() => {
+      setCopied(what);
+      setTimeout(() => setCopied(null), 1600);
+    }).catch(() => undefined);
+  }
+
+  function embedCode() {
+    const p = new URLSearchParams(location.search);
+    ["mission", "bright", "ruler", "visit", "t"].forEach((k) => p.delete(k));
+    if (p.get("mode") === "focus" || p.get("mode") === "film") p.set("mode", "blink");
+    p.set("gaia", "0");
+    const src = `${location.origin}${import.meta.env.BASE_URL}embed/?${p}`;
+    const label = view ? `SEDNA: SPHEREx sky at RA ${view.ra.toFixed(4)}, Dec ${view.dec.toFixed(4)}` : "SEDNA";
+    return `<iframe src="${src}" width="400" height="300" style="border:0" title="${label}" loading="lazy"></iframe>`;
   }
 
   function submit(e: React.FormEvent) {
@@ -374,6 +399,113 @@ export default function App() {
   const span = stack && stack.visits.length > 1 ? stack.visits[stack.visits.length - 1].midMjd - stack.visits[0].midMjd : 0;
   const shiftPx = (s: GaiaSource) => (Math.hypot(s.pmRa ?? 0, s.pmDec ?? 0) / 1000) * (span / 365.25) / scale;
 
+  // the stack's stage, caption and playback, shared by the full view and the embed (one viewer, two layouts)
+  const captionEl = !view ? null : (
+            <div className="caption mono">
+              {status.kind === "ready" && current ? (
+                <>
+                  <span className="now">
+                    {view.mode === "diff" && frames.length > 1
+                      ? `${dateLabel(frames[frames.length - 1].start)} − ${dateLabel(frames[0].start)}`
+                      : view.mode === "sum"
+                        ? `Sum of ${frames.length} visits`
+                        : dateLabel(current.start)}
+                  </span>
+                  <span>D{view.det} · {DETECTORS[view.det - 1].range}</span>
+                  <span>{view.mode === "blink" ? `${current.exposures} exp.` : `${frames.reduce((s, f) => s + f.exposures, 0)} exp.`}</span>
+                </>
+              ) : (
+                <span>&nbsp;</span>
+              )}
+            </div>
+  );
+  const stageEl = !view ? null : (
+            <div
+              className="stage"
+              role="img"
+              aria-label={current ? `SPHEREx image, detector ${view.det}, ${dateLabel(current.start)}` : "SPHEREx image"}
+              onPointerMove={(e) => onPointer(e, false)}
+              onPointerLeave={() => setReadout(null)}
+              onClick={(e) => onPointer(e as unknown as React.PointerEvent<HTMLDivElement>, true)}
+            >
+              {status.kind === "loading" && <p className="stage-msg" role="status">Reading SPHEREx exposures from the archive…</p>}
+              {status.kind === "error" && <p className="stage-msg error" role="alert">{status.message}</p>}
+              {status.kind === "ready" && !frames.length && <p className="stage-msg">No exposures of this field in detector {view.det}. Try another detector.</p>}
+              <canvas ref={canvasRef} hidden={status.kind !== "ready" || !frames.length} />
+              {status.kind === "ready" && frames.length > 0 && stack && (
+                <svg viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
+                  {gaiaMarks.map((m) => (
+                    <circle key={m.s.id} cx={m.x} cy={m.y} r={1.5} fill="none" stroke={picked?.id === m.s.id ? "var(--fg)" : "var(--ice)"} strokeWidth={shiftPx(m.s) > 0.3 ? 0.2 : 0.1} opacity={shiftPx(m.s) > 0.3 ? 0.95 : 0.55} />
+                  ))}
+                  {view.ruler && ruler.kind === "ready" && rulerAnchor && (
+                    <RulerMarks ruler={ruler.data} anchor={toSvg(rulerAnchor.ra, rulerAnchor.dec)} size={size} scale={scale} />
+                  )}
+                  {lensMark && (
+                    <g stroke="var(--ice)" strokeLinecap="round" strokeWidth={0.2}>
+                      {[[-3.2, 0, -1.8, 0], [1.8, 0, 3.2, 0], [0, -3.2, 0, -1.8], [0, 1.8, 0, 3.2]].map(([a, b, c, d], i) => (
+                        <line key={i} x1={lensMark.x + a} y1={lensMark.y + b} x2={lensMark.x + c} y2={lensMark.y + d} />
+                      ))}
+                    </g>
+                  )}
+                  {predicted && (
+                    <g stroke="var(--red-text)" strokeLinecap="round">
+                      <polyline points={predicted.pts.map((p) => `${p.x},${p.y}`).join(" ")} fill="none" strokeWidth={0.14} strokeDasharray="0.6 0.6" />
+                      {[[-3.2, 0, -1.8, 0], [1.8, 0, 3.2, 0], [0, -3.2, 0, -1.8], [0, 1.8, 0, 3.2]].map(([a, b, c, d], i) => (
+                        <line key={i} x1={predicted.now.x + a} y1={predicted.now.y + b} x2={predicted.now.x + c} y2={predicted.now.y + d} strokeWidth={0.24} />
+                      ))}
+                    </g>
+                  )}
+                </svg>
+              )}
+            </div>
+  );
+  const playbackEl = !view ? null : (
+    <>
+            <button type="button" className="play" onClick={() => setPlaying((p) => !p)} aria-label={playing ? "Pause" : "Play"} disabled={view.mode !== "blink" || frames.length < 2}>
+              <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+                {playing ? <path d="M3 2h2.6v10H3zM8.4 2H11v10H8.4z" fill="currentColor" /> : <path d="M4 2l8 5-8 5z" fill="currentColor" />}
+              </svg>
+            </button>
+            <div className="track" role="group" aria-label="Visits">
+              {frames.map((f, i) => {
+                const v = visitOf(f.visit);
+                const first = visitOf(frames[0].visit)?.midMjd ?? 0;
+                const last = visitOf(frames[frames.length - 1].visit)?.midMjd ?? 1;
+                const left = frames.length > 1 ? 6 + (88 * ((v?.midMjd ?? first) - first)) / (last - first) : 50;
+                return (
+                  <button key={f.visit} type="button" className="tick" style={{ left: `${left}%` }} aria-current={i === epoch && view.mode === "blink"} onClick={() => { setEpoch(i); update({ mode: "blink" }); }}>
+                    <i />
+                    <span className="mono">{dateLabel(f.start)}</span>
+                  </button>
+                );
+              })}
+            </div>
+    </>
+  );
+
+  if (IS_EMBED) {
+    const fullView = `${location.origin}${import.meta.env.BASE_URL}${location.search}`.replace(/[?&]embed=1/, "");
+    return (
+      <div className="embed">
+        {!view ? (
+          <p className="stage-msg">Add <span className="mono">ra</span> and <span className="mono">dec</span> to this embed link, for example <span className="mono">?ra=269.4463&amp;dec=4.7679&amp;fov=4</span>.</p>
+        ) : (
+          <>
+            {captionEl}
+            {stageEl}
+            <div className="embed-bar">
+              {playbackEl}
+              <a className="text" href={fullView} target="_blank" rel="noopener">
+                Open in SEDNA ↗<span className="sr"> (opens in new tab)</span>
+              </a>
+            </div>
+            <p className="embed-credit">NASA SPHEREx data · {source === "demo" ? "prepared case" : "SEDNA"}</p>
+          </>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="app">
       <header className="top">
@@ -404,9 +536,14 @@ export default function App() {
         </form>
         <div className="top-actions">
           {view && (
-            <button type="button" className="text" onClick={() => navigator.clipboard?.writeText(location.href).catch(() => undefined)}>
-              Copy link
-            </button>
+            <>
+              <button type="button" className="text" onClick={() => copy("link", location.href)}>
+                {copied === "link" ? "Copied" : "Copy link"}
+              </button>
+              <button type="button" className="text" onClick={() => copy("embed", embedCode())} title="An iframe of this view for another web page">
+                {copied === "embed" ? "Copied" : "Copy embed code"}
+              </button>
+            </>
           )}
         </div>
       </header>
@@ -415,6 +552,11 @@ export default function App() {
         <section className="start">
           <h1>Watch the infrared sky change.</h1>
           <p>SEDNA shows NASA SPHEREx images of any patch of sky as a short sequence in time, so anything that moved or changed stands out. Type coordinates above, or start with a one-minute mission.</p>
+          {source === "demo" && (
+            <p className="note-line" role="status">
+              The data service is not reachable, so SEDNA is running on prepared cases: the three missions, the five challenge targets and the distance controls. Typed coordinates need the live service.
+            </p>
+          )}
           <h2 className="eyebrow">One-minute missions</h2>
           <ul className="examples missions">
             {MISSIONS.map((m, i) => (
@@ -488,61 +630,8 @@ export default function App() {
             />
           ) : (
           <section className="stage-wrap">
-            <div className="caption mono">
-              {status.kind === "ready" && current ? (
-                <>
-                  <span className="now">
-                    {view.mode === "diff" && frames.length > 1
-                      ? `${dateLabel(frames[frames.length - 1].start)} − ${dateLabel(frames[0].start)}`
-                      : view.mode === "sum"
-                        ? `Sum of ${frames.length} visits`
-                        : dateLabel(current.start)}
-                  </span>
-                  <span>D{view.det} · {DETECTORS[view.det - 1].range}</span>
-                  <span>{view.mode === "blink" ? `${current.exposures} exp.` : `${frames.reduce((s, f) => s + f.exposures, 0)} exp.`}</span>
-                </>
-              ) : (
-                <span>&nbsp;</span>
-              )}
-            </div>
-            <div
-              className="stage"
-              role="img"
-              aria-label={current ? `SPHEREx image, detector ${view.det}, ${dateLabel(current.start)}` : "SPHEREx image"}
-              onPointerMove={(e) => onPointer(e, false)}
-              onPointerLeave={() => setReadout(null)}
-              onClick={(e) => onPointer(e as unknown as React.PointerEvent<HTMLDivElement>, true)}
-            >
-              {status.kind === "loading" && <p className="stage-msg" role="status">Reading SPHEREx exposures from the archive…</p>}
-              {status.kind === "error" && <p className="stage-msg error" role="alert">{status.message}</p>}
-              {status.kind === "ready" && !frames.length && <p className="stage-msg">No exposures of this field in detector {view.det}. Try another detector.</p>}
-              <canvas ref={canvasRef} hidden={status.kind !== "ready" || !frames.length} />
-              {status.kind === "ready" && frames.length > 0 && stack && (
-                <svg viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
-                  {gaiaMarks.map((m) => (
-                    <circle key={m.s.id} cx={m.x} cy={m.y} r={1.5} fill="none" stroke={picked?.id === m.s.id ? "var(--fg)" : "var(--ice)"} strokeWidth={shiftPx(m.s) > 0.3 ? 0.2 : 0.1} opacity={shiftPx(m.s) > 0.3 ? 0.95 : 0.55} />
-                  ))}
-                  {view.ruler && ruler.kind === "ready" && rulerAnchor && (
-                    <RulerMarks ruler={ruler.data} anchor={toSvg(rulerAnchor.ra, rulerAnchor.dec)} size={size} scale={scale} />
-                  )}
-                  {lensMark && (
-                    <g stroke="var(--ice)" strokeLinecap="round" strokeWidth={0.2}>
-                      {[[-3.2, 0, -1.8, 0], [1.8, 0, 3.2, 0], [0, -3.2, 0, -1.8], [0, 1.8, 0, 3.2]].map(([a, b, c, d], i) => (
-                        <line key={i} x1={lensMark.x + a} y1={lensMark.y + b} x2={lensMark.x + c} y2={lensMark.y + d} />
-                      ))}
-                    </g>
-                  )}
-                  {predicted && (
-                    <g stroke="var(--red-text)" strokeLinecap="round">
-                      <polyline points={predicted.pts.map((p) => `${p.x},${p.y}`).join(" ")} fill="none" strokeWidth={0.14} strokeDasharray="0.6 0.6" />
-                      {[[-3.2, 0, -1.8, 0], [1.8, 0, 3.2, 0], [0, -3.2, 0, -1.8], [0, 1.8, 0, 3.2]].map(([a, b, c, d], i) => (
-                        <line key={i} x1={predicted.now.x + a} y1={predicted.now.y + b} x2={predicted.now.x + c} y2={predicted.now.y + d} strokeWidth={0.24} />
-                      ))}
-                    </g>
-                  )}
-                </svg>
-              )}
-            </div>
+            {captionEl}
+            {stageEl}
             <div className="readout mono">
               <span>{readout ?? "Point at the sky to read its position and value"}</span>
               <span>North up, east left · asinh, one stretch for all dates</span>
@@ -571,7 +660,11 @@ export default function App() {
                 </button>
               </div>
             )}
-            {lens && <BrightnessPanel ra={lens.ra} dec={lens.dec} target={lens.target} label={lens.label} onClose={() => update({ bp: null }, true)} />}
+            {lens && (
+              <Suspense fallback={<p className="note-line" role="status">Opening the brightness lens…</p>}>
+                <BrightnessPanel ra={lens.ra} dec={lens.dec} target={lens.target} label={lens.label} onClose={() => update({ bp: null }, true)} />
+              </Suspense>
+            )}
             <MoversNote state={movers} onShow={(m) => update({ mode: "film", fv: m.visit, ft: m.closestMjd }, true)} />
             {target && <p className="note-line">{target.note}</p>}
           </section>
@@ -606,25 +699,7 @@ export default function App() {
           </aside>
 
           <footer className="timeline" hidden={view.mode === "focus" || view.mode === "film"}>
-            <button type="button" className="play" onClick={() => setPlaying((p) => !p)} aria-label={playing ? "Pause" : "Play"} disabled={view.mode !== "blink" || frames.length < 2}>
-              <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
-                {playing ? <path d="M3 2h2.6v10H3zM8.4 2H11v10H8.4z" fill="currentColor" /> : <path d="M4 2l8 5-8 5z" fill="currentColor" />}
-              </svg>
-            </button>
-            <div className="track" role="group" aria-label="Visits">
-              {frames.map((f, i) => {
-                const v = visitOf(f.visit);
-                const first = visitOf(frames[0].visit)?.midMjd ?? 0;
-                const last = visitOf(frames[frames.length - 1].visit)?.midMjd ?? 1;
-                const left = frames.length > 1 ? 6 + (88 * ((v?.midMjd ?? first) - first)) / (last - first) : 50;
-                return (
-                  <button key={f.visit} type="button" className="tick" style={{ left: `${left}%` }} aria-current={i === epoch && view.mode === "blink"} onClick={() => { setEpoch(i); update({ mode: "blink" }); }}>
-                    <i />
-                    <span className="mono">{dateLabel(f.start)}</span>
-                  </button>
-                );
-              })}
-            </div>
+            {playbackEl}
             <button type="button" className="speed mono" onClick={() => update({ fps: view.fps === 1 ? 2 : view.fps === 2 ? 4 : 1 })} aria-label="Blink speed">
               {view.fps} fps
             </button>
@@ -636,11 +711,10 @@ export default function App() {
         <span>
           Data: NASA SPHEREx Level-2 spectral images (DR1 and QR3), read from the public archive bucket{health ? `, through ${health}` : ""}. Star positions: ESA Gaia DR3.
         </span>
-        {stack && status.kind === "ready" && (
-          <span className="mono">
-            {stack.exposuresRead} exposures · {stack.source === "cache" ? "prepared result" : `read in ${stack.seconds}s`}
-          </span>
-        )}
+        <span className="mono">
+          {stack && status.kind === "ready" ? `${stack.exposuresRead} exposures · ${stack.source === "cache" ? "prepared result" : `read in ${stack.seconds}s`} · ` : ""}
+          {source === "live" ? "live data service" : source === "demo" ? "prepared cases: the data service is offline" : ""}
+        </span>
       </footer>
     </div>
   );

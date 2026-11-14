@@ -20,7 +20,8 @@ Named after 90377 Sedna, found on 14 November 2003 by comparing images of the sa
 - **Distance focus.** Three steps: watch the point walk among the stars, turn the knob until it snaps into focus, check the distance against JPL Horizons.
 - **Next visit.** From the focus distance, SEDNA predicts where the body will be at SPHEREx's next visit, months later and degrees away, then follows the whole predicted region in that visit's exposures. Makemake is found again 2.5″ and 2.8″ from JPL Horizons' position, although the prediction itself was 16′ and 8′ off. Misses are reported as misses.
 - **Parallax ruler.** On any field and pair of visits, shows how far a body at 50, 100, 300 or 500 au, or a star at 2 pc, would move: the reason a blink of fixed coordinates cannot catch a distant world.
-- **Shareable.** The URL reproduces the view, and there is a direct link to the same sky in WiseView.
+- **Shareable and embeddable.** The URL reproduces the view, and there is a direct link to the same sky in WiseView. "Copy embed code" gives an iframe of the view (`/embed/?ra=...&dec=...`), which fits a 400 × 300 frame: the sky, a minimal timeline and a link back.
+- **Works offline.** The site tries the data service and, if it does not answer, runs on prepared cases recorded from it: the three missions, the five challenge targets, the distance controls and a blind search on Makemake's field. The footer says which one is answering; a view that is not prepared says so and lists the prepared ones.
 
 ## Validation
 
@@ -43,6 +44,10 @@ cd web
 npm install
 npm run dev        # http://127.0.0.1:5173
 ```
+
+No data service at hand? `npm run dev:demo` runs the whole site on the prepared cases in `web/public/demo`, and so does a static build (`npm run build`, then `npm run preview`) when the service is offline.
+
+To record the prepared cases again, run the data service and `npm run dev`, then `npm run bake:demo`: it drives the app through every demo flow and saves the service's answers. `node scripts/check-demo.mjs [app url]` then checks every prepared flow, the offline message and the embed, with the service stopped.
 
 The folded sky index ships in `data/index/compact.npz`. To rebuild it from the bucket:
 

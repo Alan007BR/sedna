@@ -87,6 +87,24 @@ def test_no_shared_channel_means_no_answer():
     assert out == []
 
 
+def test_neighbours_count_only_bright_close_stars(monkeypatch):
+    from sedna import brightness_service
+    from sedna.archive import gaia
+
+    ra, dec = 133.8, -7.24
+    stars = [
+        {"ra": ra + 5 / 3600, "dec": dec, "g": 16.3},  # 5" away, bright enough to matter
+        {"ra": ra, "dec": dec + 8 / 3600, "g": 22.0},  # close but far too faint
+        {"ra": ra + 60 / 3600, "dec": dec, "g": 12.0},  # bright but outside the aperture ring
+        {"ra": ra, "dec": dec + 1 / 3600, "g": 15.0},  # the point itself
+    ]
+    monkeypatch.setattr(gaia, "cone", lambda *a, **k: stars)
+    measured = brightness_service.G_ZERO_UJY * 10 ** (-0.4 * 16.3)  # the neighbour carries all of the measured light
+    out = brightness_service.neighbours(ra, dec, "aperture", measured)
+    assert [round(n["separationArcsec"]) for n in out] == [5]
+    assert out[0]["share"] == pytest.approx(1.0, abs=0.02)
+
+
 def test_low_signal_exposures_are_ignored():
     out = brightness_change([0, 0, 0, 0], [0, 0, 1, 1], [100.0, 100.0, 2.0, 2.0], [1.0, 1.0, 1.0, 1.0], min_snr=3.0)
     assert out == []

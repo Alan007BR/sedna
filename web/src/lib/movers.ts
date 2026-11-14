@@ -2,7 +2,8 @@
 // The service decides which bodies crossed and where; this file only validates and labels.
 // Code written with AI assistance (Claude); see AI_USAGE.md.
 import { z } from "zod";
-import { ApiError } from "./api";
+import { ApiError } from "./api-error";
+import { request } from "./transport";
 
 const TrackPoint = z.object({ mjd: z.number(), ra: z.number(), dec: z.number() });
 const MoverSchema = z.object({
@@ -42,15 +43,7 @@ export type Mover = z.infer<typeof MoverSchema>;
 export type Movers = z.infer<typeof MoversSchema>;
 
 export async function fetchMovers(ra: number, dec: number, fov: number, signal?: AbortSignal): Promise<Movers> {
-  let response: Response;
-  try {
-    response = await fetch(`/api/movers?ra=${ra.toFixed(5)}&dec=${dec.toFixed(5)}&fov=${fov}`, { signal });
-  } catch (err) {
-    if ((err as Error).name === "AbortError") throw err;
-    throw new ApiError("SERVICE_UNREACHABLE", "The SEDNA data service did not answer.");
-  }
-  const body = await response.json().catch(() => null);
-  if (!response.ok) throw new ApiError(body?.detail?.code ?? "ERROR", body?.detail?.message ?? `The data service returned an error (${response.status}).`);
+  const body = await request(`/api/movers?ra=${ra.toFixed(5)}&dec=${dec.toFixed(5)}&fov=${fov}`, signal);
   const parsed = MoversSchema.safeParse(body);
   if (!parsed.success) throw new ApiError("BAD_RESPONSE", "The known-object list came back in an unexpected shape.");
   return parsed.data;

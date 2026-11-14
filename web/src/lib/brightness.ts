@@ -2,7 +2,8 @@
 // The service measures; these functions only reshape its points for display.
 // Code written with AI assistance (Claude); see AI_USAGE.md.
 import { z } from "zod";
-import { ApiError } from "./api";
+import { ApiError } from "./api-error";
+import { request } from "./transport";
 
 const ExposureSchema = z.object({
   mjd: z.number(),
@@ -34,6 +35,7 @@ export const BrightnessSchema = z.object({
   unit: z.string(),
   exposuresAvailable: z.number().int(),
   exposuresMeasured: z.number().int(),
+  neighbours: z.array(z.object({ separationArcsec: z.number(), g: z.number(), share: z.number() })).nullable().optional(),
   bins: z.array(z.object({ index: z.number().int(), start: z.string(), end: z.string(), midMjd: z.number(), exposures: z.number().int() })),
   exposures: z.array(ExposureSchema),
   change: z.array(z.object({ detector: z.number().int(), rangeUm: z.tuple([z.number(), z.number()]), points: z.array(ChangePointSchema) })),
@@ -44,15 +46,7 @@ export type Brightness = z.infer<typeof BrightnessSchema>;
 
 export async function fetchBrightness(ra: number, dec: number, target: string | null, signal?: AbortSignal): Promise<Brightness> {
   const q = `ra=${ra.toFixed(5)}&dec=${dec.toFixed(5)}${target ? `&target=${encodeURIComponent(target)}` : ""}`;
-  let response: Response;
-  try {
-    response = await fetch(`/api/brightness?${q}`, { signal });
-  } catch (err) {
-    if ((err as Error).name === "AbortError") throw err;
-    throw new ApiError("SERVICE_UNREACHABLE", "The SEDNA data service did not answer. Try again in a moment.");
-  }
-  const body = await response.json().catch(() => null);
-  if (!response.ok) throw new ApiError(body?.detail?.code ?? "ERROR", body?.detail?.message ?? `The data service returned an error (${response.status}).`);
+  const body = await request(`/api/brightness?${q}`, signal);
   const parsed = BrightnessSchema.safeParse(body);
   if (!parsed.success) throw new ApiError("BAD_RESPONSE", "The brightness measurement came back in an unexpected shape.");
   return parsed.data;
@@ -118,17 +112,40 @@ export function changeRows(b: Brightness) {
   });
 }
 
-/** Plain-language summary of the largest change. Positive magnitudes are fainter. */
+/** Smallest change the method can vouch for, beyond its statistical error: channel and calibration systematics. */
+export const SYSTEMATIC_FLOOR = { aperture: 0.15, wing: 0.3 } as const;
+
+/**
+ * Plain-language summary of the largest change. Positive magnitudes are fainter.
+ * A change is reported only above the method's systematic floor and three times its error, and only
+ * when a second detector changes the same way: real variability spans neighbouring wavelengths,
+ * a single-detector jump usually does not.
+ */
 export function summary(b: Brightness): string {
   const rows = changeRows(b).filter((r) => r.firstToLast !== null);
-  if (!rows.length) return "Not enough repeated exposures at the same wavelength to measure a change in brightness at this point yet.";
-  const notable = rows.filter((r) => Math.abs(r.firstToLast as number) >= Math.max(0.1, 3 * (r.firstToLastErr ?? 0)));
-  if (!notable.length) return `No change larger than 0.1 magnitude between ${rows[0].firstDate} and ${rows[0].lastDate} at any wavelength.`;
-  const top = [...notable].sort((a, c) => Math.abs(c.firstToLast as number) - Math.abs(a.firstToLast as number))[0];
+  const caveat = neighbourCaveat(b);
+  if (!rows.length) return `Not enough repeated exposures at the same wavelength to measure a change in brightness at this point yet.${caveat}`;
+  const floor = SYSTEMATIC_FLOOR[b.method];
+  const notable = rows.filter((r) => Math.abs(r.firstToLast as number) >= Math.max(floor, 3 * (r.firstToLastErr ?? 0)));
+  const sign = (r: (typeof rows)[number]) => Math.sign(r.firstToLast as number);
+  const confirmed = notable.filter((r) => notable.some((o) => o.detector !== r.detector && sign(o) === sign(r)));
+  if (!confirmed.length) {
+    return `No change larger than ${floor} magnitude, seen in more than one detector, between ${rows[0].firstDate} and ${rows[0].lastDate}.${caveat}`;
+  }
+  const top = [...confirmed].sort((a, c) => Math.abs(c.firstToLast as number) - Math.abs(a.firstToLast as number))[0];
   const word = (top.firstToLast as number) > 0 ? "faded" : "brightened";
   const many = rows.some((r) => r.bins > 3);
   const extra = many ? ` Across all dates it varied by up to ${Math.max(...rows.map((r) => r.peakToPeak)).toFixed(1)} magnitudes.` : "";
-  return `Between ${top.firstDate} and ${top.lastDate} it ${word} by ${Math.abs(top.firstToLast as number).toFixed(2)} magnitude at ${top.rangeUm[0].toFixed(2)}–${top.rangeUm[1].toFixed(2)} µm (detector ${top.detector}).${extra}`;
+  return `Between ${top.firstDate} and ${top.lastDate} it ${word} by ${Math.abs(top.firstToLast as number).toFixed(2)} magnitude at ${top.rangeUm[0].toFixed(2)}–${top.rangeUm[1].toFixed(2)} µm (detector ${top.detector}).${extra}${caveat}`;
+}
+
+/** A warning when a Gaia star sits inside the measuring ring: its light is counted too. */
+export function neighbourCaveat(b: Brightness): string {
+  const n = b.neighbours?.[0];
+  if (!n) return "";
+  const more = (b.neighbours?.length ?? 0) > 1 ? ` and ${(b.neighbours?.length ?? 1) - 1} more` : "";
+  const share = n.share >= 0.95 ? "as bright as what is measured here" : `about ${Math.round(n.share * 100)}% of the light measured here`;
+  return ` A Gaia star (G ${n.g.toFixed(1)}) lies ${Math.round(n.separationArcsec)}″ from the point${more}, inside the measuring ring and ${share}, so part of any change may come from it.`;
 }
 
 export function toCsv(b: Brightness): string {

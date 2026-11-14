@@ -30,27 +30,11 @@ export type Target = {
   source: string;
 };
 
-export class ApiError extends Error {
-  constructor(public code: string, message: string) {
-    super(message);
-  }
-}
+import { request } from "./transport";
 
-async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
-  let response: Response;
-  try {
-    response = await fetch(path, { signal });
-  } catch (err) {
-    if ((err as Error).name === "AbortError") throw err;
-    throw new ApiError("SERVICE_UNREACHABLE", "The SEDNA data service did not answer. Try again in a moment.");
-  }
-  if (!response.ok) {
-    const body = await response.json().catch(() => null);
-    const detail = body?.detail;
-    throw new ApiError(detail?.code ?? "ERROR", detail?.message ?? `The data service returned an error (${response.status}).`);
-  }
-  return response.json() as Promise<T>;
-}
+export { ApiError } from "./api-error";
+
+const get = <T,>(path: string, signal?: AbortSignal) => request(path, signal) as Promise<T>;
 
 export function decode(base64: string): Float32Array {
   const bin = atob(base64);

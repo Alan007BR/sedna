@@ -18,6 +18,9 @@ from .archive.skyindex import SkyIndex
 from .archive.wavelength import WaveMap
 from .science.photometry import aperture, brightness_change, channel, time_bins, wing
 
+CONTAMINATION_ARCSEC = {"aperture": 18.0, "wing": 45.0}  # how close a neighbour can leak into the measuring ring
+CONTAMINATION_SHARE = 0.05  # neighbours fainter than 5 % of the light measured at the point cannot move it by 0.05 mag
+G_ZERO_UJY = 3.2e9  # Gaia G = 0 in microjansky, roughly; G spans 0.33-1.05 um, close to detector 1
 HALF = 13  # cutout half-size in pixels: room for the wing background ring (9-12 px)
 MAX_EXPOSURES = 1200
 SATURATED_SHARE = 0.2  # above this share of exposures with NaN cores, measure the wings
@@ -88,3 +91,29 @@ def measure_point(index: SkyIndex, ra: float, dec: float, position_at=None, work
         if sel:
             change[det] = brightness_change([e.channel for e in sel], [e.bin for e in sel], [e.flux for e in sel], [e.error for e in sel])
     return method, exposures, available, change
+
+
+def neighbours(ra: float, dec: float, method: str, measured_ujy: float, track: list[tuple[float, float]] | None = None) -> list[dict] | None:
+    """Gaia DR3 stars (G < 18) close enough to the point, and bright enough, to leak into its measurement.
+
+    Close enough: inside the aperture or wing ring. Bright enough: at least 5 % of ``measured_ujy``, the
+    flux measured at the point in detector 1 (Gaia's G band ends at 1.05 um). The point itself (within
+    4 arcsec) is skipped. For a moving target, distances are measured to its track over the dates
+    measured, because its neighbours change as it moves. None when Gaia does not answer.
+    """
+    from .archive.gaia import cone
+    from .science.movers import separation_arcsec
+
+    limit = CONTAMINATION_ARCSEC[method]
+    points = track or [(ra, dec)]
+    try:
+        rows = cone(ra, dec, (limit + 60) / 3600, g_max=18.0, limit=80)
+    except Exception:
+        return None
+    out = []
+    for s in rows:
+        d = min(float(separation_arcsec(s["ra"], s["dec"], r, c)) for r, c in points)
+        share = G_ZERO_UJY * 10 ** (-0.4 * float(s["g"])) / measured_ujy if measured_ujy > 0 else float("inf")
+        if 4.0 <= d <= limit and share >= CONTAMINATION_SHARE:
+            out.append({"separationArcsec": round(d, 1), "g": round(float(s["g"]), 1), "share": round(min(share, 99.0), 2)})
+    return sorted(out, key=lambda n: n["separationArcsec"])

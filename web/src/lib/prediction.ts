@@ -2,7 +2,9 @@
 // The service computes every position; these functions only validate, format and lay out.
 // Code written with AI assistance (Claude); see AI_USAGE.md.
 import { z } from "zod";
-import { ApiError, decode } from "./api";
+import { decode } from "./api";
+import { ApiError } from "./api-error";
+import { request } from "./transport";
 
 const Dated = z.object({ ra: z.number(), dec: z.number(), mjd: z.number(), date: z.string() });
 
@@ -55,18 +57,7 @@ export const NextVisitSchema = z.object({
 export type NextVisitRaw = z.infer<typeof NextVisitSchema>;
 export type NextVisit = Omit<NextVisitRaw, "tracked" | "static"> & { tracked: Float32Array | null; static: Float32Array | null };
 
-async function getJson(url: string, signal?: AbortSignal) {
-  let response: Response;
-  try {
-    response = await fetch(url, { signal });
-  } catch (err) {
-    if ((err as Error).name === "AbortError") throw err;
-    throw new ApiError("SERVICE_UNREACHABLE", "The SEDNA data service did not answer. Try again in a moment.");
-  }
-  const body = await response.json().catch(() => null);
-  if (!response.ok) throw new ApiError(body?.detail?.code ?? "ERROR", body?.detail?.message ?? `The data service returned an error (${response.status}).`);
-  return body;
-}
+const getJson = (url: string, signal?: AbortSignal) => request(url, signal);
 
 export async function fetchRuler(ra: number, dec: number, mjdA: number, mjdB: number, fov: number, signal?: AbortSignal): Promise<Ruler> {
   const body = await getJson(`/api/parallax-ruler?ra=${ra.toFixed(5)}&dec=${dec.toFixed(5)}&mjd_a=${mjdA.toFixed(4)}&mjd_b=${mjdB.toFixed(4)}&fov=${fov}`, signal);

@@ -91,6 +91,7 @@ class BrightnessResponse(BaseModel):
     unit: str
     exposuresAvailable: int
     exposuresMeasured: int
+    neighbours: list[dict] | None  # Gaia stars bright and close enough to leak into the measurement: separationArcsec, g, share
     bins: list[TimeBin]
     exposures: list[ExposurePoint]
     change: list[DetectorChange]

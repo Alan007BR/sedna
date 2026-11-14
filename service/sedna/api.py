@@ -23,7 +23,7 @@ from .archive.skybot import known_object
 from .archive.skyindex import SkyIndex
 from .science import parallax
 from .focus_service import focus_body
-from .brightness_service import measure_point
+from .brightness_service import measure_point, neighbours
 from .brightness_service import wavemap as brightness_wavemap
 from .archive import horizons
 from .models import BrightnessResponse, MoversResponse, NextVisitResponse, RulerResponse
@@ -384,6 +384,13 @@ def brightness(ra: float = Query(..., ge=0, lt=360), dec: float = Query(..., ge=
         "unit": "µJy",
         "exposuresAvailable": available,
         "exposuresMeasured": len(exposures),
+        "neighbours": neighbours(
+            ra,
+            dec,
+            method,
+            float(np.median([e.flux for e in exposures if e.det == 1 and np.isfinite(e.flux) and e.flux > 0] or [e.flux for e in exposures if np.isfinite(e.flux) and e.flux > 0] or [0.0])),
+            [position_at(m) for m in np.linspace(exposures[0].mjd, exposures[-1].mjd, 12)] if position_at else None,
+        ),
         "bins": bins,
         "exposures": [
             {

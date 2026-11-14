@@ -25,6 +25,8 @@ type Props = {
 
 const LIMITS = { lo: -0.8, hi: 12 };
 const MAP_LIMITS = { lo: 2, hi: 12 }; // S/N: noise stays dark, a candidate (5 and up) stands out
+// at 15' an artifact-crowded corner of Epsilon Indi B's field gave a false candidate; 6' is what was tested in full
+const SEARCH_MAX_FOV = 10;
 type SearchState = { kind: "idle" | "loading" | "ready" | "error"; data?: Search; message?: string };
 
 export default function FilmPanel({ ra, dec, fov, visit, visitLabels, startMjd, movers, onVisit, onFocus }: Props) {
@@ -248,7 +250,9 @@ export default function FilmPanel({ ra, dec, fov, visit, visitLabels, startMjd, 
             )}
           </div>
           <div className="focus-actions search-actions">
-            {search.kind !== "ready" ? (
+            {fov > SEARCH_MAX_FOV ? (
+              <p className="note-line">The search for moving bodies covers fields up to {SEARCH_MAX_FOV}′ across, where it was tested. Choose a field of view of {SEARCH_MAX_FOV}′ or less to search.</p>
+            ) : search.kind !== "ready" ? (
               <button type="button" className={pick ? "text ice" : "primary"} onClick={runSearch} disabled={search.kind === "loading"}>
                 Search this visit for moving bodies
               </button>

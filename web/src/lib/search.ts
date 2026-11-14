@@ -87,7 +87,8 @@ export function knownLine(c: Candidate): string | null {
 /** What the search found, in one sentence. */
 export function searchSummary(s: Search): string {
   const n = s.candidates.length;
-  const span = `${s.window.exposures} exposures over ${days(s)} days`;
+  const d = days(s);
+  const span = `${s.window.exposures} exposures over ${d} day${d === 1 ? "" : "s"}`;
   if (n === 0) return `No moving body stands out in this visit. SEDNA shifted and stacked ${span} for every trial distance from ${s.distancesAu[0]} to ${s.distancesAu[1]} au.`;
   return `${n === 1 ? "One moving body stands out" : `${n} moving bodies stand out`} in ${span}, searched at every trial distance from ${s.distancesAu[0]} to ${s.distancesAu[1]} au.`;
 }

@@ -9,9 +9,10 @@ import json
 from pathlib import Path
 
 import requests
+from ..paths import CACHE_DIR
 
 TAP = "https://gea.esac.esa.int/tap-server/tap/sync"
-CACHE = Path(__file__).resolve().parents[3] / "data" / "cache" / "gaia"
+CACHE = CACHE_DIR / "gaia"
 REF_EPOCH = 2016.0
 
 

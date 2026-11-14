@@ -4,8 +4,11 @@
 //   live  every request goes to the service;
 //   demo  every request is answered from web/public/demo, recorded from the live service by
 //         scripts/bake-demo.mjs, so the site runs with no service at all;
-//   auto  (default) the service if it answers at start-up, otherwise the prepared cases; a live
-//         request that fails on the network also falls back to its prepared answer when there is one.
+//   auto  (default) a prepared case is answered from its file, always: it is the service's own answer,
+//         recorded, so it is instant, works while the service sleeps and costs the service nothing.
+//         Anything else goes to the service; if the service is unreachable, the screen says which
+//         cases are prepared. The service is woken in the background when the site opens.
+// bake-demo.mjs empties public/demo before recording, so in auto mode every request then reaches the service.
 // Code written with AI assistance (Claude); see AI_USAGE.md.
 import { ApiError } from "./api-error";
 
@@ -25,7 +28,6 @@ type Manifest = {
 };
 
 let manifestPromise: Promise<Manifest | null> | null = null;
-let livePromise: Promise<boolean> | null = null;
 let active: Active | null = CONFIGURED === "auto" ? null : CONFIGURED;
 const listeners = new Set<(a: Active) => void>();
 
@@ -54,20 +56,41 @@ export async function preparedCases() {
   return (await loadManifest())?.cases ?? [];
 }
 
+// A sleeping serverless service takes several seconds to start; a "no" is asked again after a while.
+const HEALTH_TIMEOUT_MS = 25000;
+const RECHECK_AFTER_MS = 30000;
+let liveCheck: { promise: Promise<boolean>; ok: boolean; settledAt: number | null } | null = null;
+
 function liveAvailable(): Promise<boolean> {
-  livePromise ??= (async () => {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 4000);
-    try {
-      const r = await fetch(`${API_BASE}/api/health`, { signal: ctrl.signal });
-      return r.ok && (r.headers.get("content-type") ?? "").includes("json");
-    } catch {
-      return false;
-    } finally {
-      clearTimeout(timer);
-    }
-  })();
-  return livePromise;
+  const stale = liveCheck && liveCheck.settledAt !== null && !liveCheck.ok && Date.now() - liveCheck.settledAt > RECHECK_AFTER_MS;
+  if (!liveCheck || stale) {
+    const check: { promise: Promise<boolean>; ok: boolean; settledAt: number | null } = { promise: Promise.resolve(false), ok: false, settledAt: null };
+    check.promise = checkLive().then((ok) => {
+      check.ok = ok;
+      check.settledAt = Date.now();
+      return ok;
+    });
+    liveCheck = check;
+  }
+  return liveCheck!.promise;
+}
+
+async function checkLive(): Promise<boolean> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), HEALTH_TIMEOUT_MS);
+  try {
+    const r = await fetch(`${API_BASE}/api/health`, { signal: ctrl.signal });
+    return r.ok && (r.headers.get("content-type") ?? "").includes("json");
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Wakes the service and reports which side can answer, without making any screen wait for it. */
+function probeLive() {
+  liveAvailable().then((ok) => setActive(ok ? "live" : "demo"));
 }
 
 async function fromLive(path: string, signal?: AbortSignal): Promise<unknown> {
@@ -102,18 +125,14 @@ async function fromDemo(path: string, signal?: AbortSignal): Promise<unknown> {
 export async function request(path: string, signal?: AbortSignal): Promise<unknown> {
   if (CONFIGURED === "demo") return fromDemo(path, signal);
   if (CONFIGURED === "live") return fromLive(path, signal);
+  if ((await loadManifest())?.responses[path]) {
+    probeLive();
+    return fromDemo(path, signal);
+  }
   if (!(await liveAvailable())) {
     setActive("demo");
     return fromDemo(path, signal);
   }
   setActive("live");
-  try {
-    return await fromLive(path, signal);
-  } catch (err) {
-    if (err instanceof ApiError && err.code === "SERVICE_UNREACHABLE" && (await loadManifest())?.responses[path]) {
-      setActive("demo");
-      return fromDemo(path, signal);
-    }
-    throw err;
-  }
+  return fromLive(path, signal);
 }

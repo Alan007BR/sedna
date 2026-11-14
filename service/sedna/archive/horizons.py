@@ -13,9 +13,10 @@ from pathlib import Path
 
 import numpy as np
 from astroquery.jplhorizons import Horizons
+from ..paths import CACHE_DIR
 
 OBSERVER = "500@-163182"  # the SPHEREx spacecraft
-CACHE = Path(__file__).resolve().parents[3] / "data" / "cache" / "horizons"
+CACHE = CACHE_DIR / "horizons"
 
 
 def _cached(name: str, compute):

@@ -42,10 +42,11 @@ from .science.movers import separation_arcsec, tangent_offsets_arcsec
 from .science.focus import INFINITY_AU, judge
 from .science.stack import DETECTOR_RANGE_UM, PIXEL_ARCSEC, build_stack
 from .targets import TARGETS, propagate
+from .paths import CACHE_DIR
 
 SCHEMA = 1
 RELEASE = "SPHEREx DR1 + QR3 (pipeline R7), read from the public AWS bucket"
-CACHE = Path(__file__).resolve().parents[2] / "data" / "cache" / "stacks"
+CACHE = CACHE_DIR / "stacks"
 CITATION = (
     "This work makes use of data products from the Spectro-Photometer for the History of the Universe, "
     "Epoch of Reionization and Ices Explorer (SPHEREx), which is a joint project of the Jet Propulsion Laboratory "

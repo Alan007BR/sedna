@@ -15,9 +15,10 @@ from pathlib import Path
 
 import requests
 from astropy.time import Time
+from ..paths import CACHE_DIR
 
 URL = "https://ssp.imcce.fr/webservices/skybot/api/conesearch.php"
-CACHE = Path(__file__).resolve().parents[3] / "data" / "cache" / "skybot"
+CACHE = CACHE_DIR / "skybot"
 TIMEOUT = 45
 
 

@@ -15,6 +15,7 @@ data/*.txt
 # Secrets and local settings
 .env
 .env.*
+.vercel/
 .claude/settings.local.json
 
 # OS and editors

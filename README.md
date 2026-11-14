@@ -7,13 +7,15 @@
 </p>
 
 <p align="center">
+  <a href="https://sednaspace.earth"><strong>Open SEDNA</strong></a> ·
   <a href="#what-it-does">Features</a> ·
   <a href="#validation">Validation</a> ·
   <a href="#run-it-locally">Run locally</a> ·
+  <a href="docs/deploy.md">Deployment</a> ·
   <a href="docs/brand/README.md">Brand identity</a>
 </p>
 
-**Watch the SPHEREx sky change over time, and focus it by distance.**
+**Watch the SPHEREx sky change over time, and focus it by distance.** Live at **https://sednaspace.earth** (also https://sednaspace.vercel.app).
 
 SEDNA is a web tool for the NASA Space Apps Challenge 2026 challenge *Planet X and SPHEREx*. Type a sky position or a name, and SEDNA shows NASA SPHEREx images of that patch as a short sequence in time, so anything that moved or changed stands out.
 
@@ -61,7 +63,7 @@ npm install
 npm run dev        # http://127.0.0.1:5173
 ```
 
-No data service at hand? `npm run dev:demo` runs the whole site on the prepared cases in `web/public/demo`, and so does a static build (`npm run build`, then `npm run preview`) when the service is offline.
+No data service at hand? `npm run dev:demo` runs the whole site on the prepared cases in `web/public/demo`, and so does a static build (`npm run build`, then `npm run preview`) when the service is offline. The published site answers the prepared cases from these files even when the service is up, and asks the service only for anything else; [docs/deploy.md](docs/deploy.md) describes the deployment (site on Vercel, data service on AWS Lambda).
 
 To record the prepared cases again, run the data service and `npm run dev`, then `npm run bake:demo`: it drives the app through every demo flow and saves the service's answers. `node scripts/check-demo.mjs [app url]` then checks every prepared flow, the start page fitting one screen, the intro, the offline message and the embed, with the service stopped.
 

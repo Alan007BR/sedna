@@ -1,0 +1,8 @@
+# Only the service code and its shipped data go into the Lambda image (deploy/aws/Dockerfile).
+*
+!service/requirements-lambda.txt
+!service/sedna/
+!data/index/compact.npz
+!data/wavelength/
+**/__pycache__
+**/*.pyc

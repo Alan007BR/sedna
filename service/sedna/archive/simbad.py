@@ -14,8 +14,9 @@ import json
 from pathlib import Path
 
 import requests
+from ..paths import CACHE_DIR
 
-CACHE = Path(__file__).resolve().parents[3] / "data" / "cache" / "simbad"
+CACHE = CACHE_DIR / "simbad"
 MIRRORS = [
     {"name": "CDS", "simbad": "https://simbad.cds.unistra.fr", "vizier": "https://vizier.cds.unistra.fr"},
     {"name": "CfA mirror", "simbad": "https://simbad.cfa.harvard.edu", "vizier": "https://vizier.cfa.harvard.edu"},

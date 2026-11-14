@@ -17,8 +17,9 @@ from astropy.io import fits
 from astropy.wcs import WCS
 
 from . import s3
+from ..paths import CACHE_DIR
 
-CACHE = Path(__file__).resolve().parents[3] / "data" / "cache" / "headers"
+CACHE = CACHE_DIR / "headers"
 NAXIS = 2040
 
 

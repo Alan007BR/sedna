@@ -23,6 +23,7 @@ Named after 90377 Sedna, found on 14 November 2003 by comparing images of the sa
 
 ## What it does
 
+- **One screen to start.** The start page fits one screen on laptops and phones: a real 30′ SPHEREx field drifting slowly behind, Makemake crossing a field in ten single exposures, the search, the five challenge targets and the missions, each with its own real image. The brand intro from the [motion kit](docs/brand/motion/) plays once a session and can be skipped; the kit's orbiting mark covers the longer waits. Nothing moves for visitors who ask for reduced motion.
 - **Find Sedna.** 90377 Sedna, 83 au away at magnitude 20.8, is invisible in any single SPHEREx exposure (S/N 0.7). Stacked along its orbit over 161 exposures, with the stars removed using the same sky from other visits, it appears as a point at S/N 9.8, in each of its three visits; none of 200 control tracks comes close. The page says plainly why this works (the orbit is known) and what it means for fainter, unknown worlds.
 - **Three one-minute missions** for a first visit: watch Barnard's Star walk, see WISE 0855 appear only in the infrared, and measure Makemake's distance with the focus knob. Each step advances only when the person has done it, every claim is a measured result, and a mission can be shared as a link (`?mission=walk`).
 - **Any position, fast.** SEDNA keeps its own index of every SPHEREx exposure (272,963 detector-1 frames, April 2025 to October 2026), built from the public archive bucket. A lookup takes about 40 ms and does not depend on the archive's search services.
@@ -62,7 +63,9 @@ npm run dev        # http://127.0.0.1:5173
 
 No data service at hand? `npm run dev:demo` runs the whole site on the prepared cases in `web/public/demo`, and so does a static build (`npm run build`, then `npm run preview`) when the service is offline.
 
-To record the prepared cases again, run the data service and `npm run dev`, then `npm run bake:demo`: it drives the app through every demo flow and saves the service's answers. `node scripts/check-demo.mjs [app url]` then checks every prepared flow, the offline message and the embed, with the service stopped.
+To record the prepared cases again, run the data service and `npm run dev`, then `npm run bake:demo`: it drives the app through every demo flow and saves the service's answers. `node scripts/check-demo.mjs [app url]` then checks every prepared flow, the start page fitting one screen, the intro, the offline message and the embed, with the service stopped.
+
+The start page's images are rendered from the prepared cases and one 30′ stack, with the app's own stretch: run the data service, then `.venv/Scripts/python web/scripts/render-landing.py` from the repository root. `node scripts/shot-landing.mjs [app url] [folder]` takes screenshots at eight screen sizes and says whether each fits without scrolling.
 
 The folded sky index ships in `data/index/compact.npz`. To rebuild it from the bucket:
 

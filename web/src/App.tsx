@@ -3,7 +3,9 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import FilmPanel, { type Seed } from "./FilmPanel";
 import FocusPanel, { type FocusStep } from "./FocusPanel";
+import { OrbitalLoader } from "./Brand";
 import FollowPanel from "./FollowPanel";
+import Landing from "./Landing";
 import MissionCoach from "./MissionCoach";
 import MoversNote, { type MoversState } from "./MoversNote";
 import RulerPanel, { RulerMarks, type RulerState } from "./RulerPanel";
@@ -95,6 +97,10 @@ export default function App() {
   const [readout, setReadout] = useState<string | null>(null);
   const [picked, setPicked] = useState<GaiaSource | null>(null);
   const [health, setHealth] = useState<string | null>(null);
+  const [exposures, setExposures] = useState<number | null>(null);
+  // a distant body's field is found before the view opens: the start page shows that wait
+  const [opening, setOpening] = useState<string | null>(null);
+  const openToken = useRef(0);
   const [source, setSource] = useState<Active | null>(null);
   const [copied, setCopied] = useState<"link" | "embed" | null>(null);
   useEffect(() => onSourceChange(setSource), []);
@@ -129,7 +135,9 @@ export default function App() {
 
   useEffect(() => {
     fetchTargets().then(setTargets).catch(() => setTargets([]));
-    fetchHealth().then((h) => setHealth(h.dataThrough.slice(0, 10))).catch(() => setHealth(null));
+    fetchHealth()
+      .then((h) => { setHealth(h.dataThrough.slice(0, 10)); setExposures(h.exposures); })
+      .catch(() => setHealth(null));
     const onPop = () => setView(readView());
     addEventListener("popstate", onPop);
     return () => removeEventListener("popstate", onPop);
@@ -245,6 +253,8 @@ export default function App() {
       // a distant body has no fixed field: centre on where it was when the focus is seeded
       let ra = t.ra;
       let dec = t.dec;
+      const token = ++openToken.current;
+      setOpening(t.name);
       try {
         const f = await fetchFocus(t.id, 0);
         ra = f.seed.ra;
@@ -252,6 +262,8 @@ export default function App() {
       } catch {
         /* fall back to the approximate position; the focus panel reports the error */
       }
+      if (token !== openToken.current) return; // the person went back to the start page meanwhile
+      setOpening(null);
       const next: View = { ...(view ?? VIEW_DEFAULTS), ra, dec, target: t.id, mode: "focus", fv: 0, ft: null, bp: null, mission: null, ...extra };
       writeView(next, true);
       setView(next);
@@ -467,7 +479,11 @@ export default function App() {
               onPointerLeave={() => setReadout(null)}
               onClick={(e) => onPointer(e as unknown as React.PointerEvent<HTMLDivElement>, true)}
             >
-              {status.kind === "loading" && <p className="stage-msg" role="status">Reading SPHEREx exposures from the archive…</p>}
+              {status.kind === "loading" && (
+                <div className="stage-msg">
+                  <OrbitalLoader size={IS_EMBED ? 40 : 64}>Reading SPHEREx exposures from the archive…</OrbitalLoader>
+                </div>
+              )}
               {status.kind === "error" && <p className="stage-msg error" role="alert">{status.message}</p>}
               {status.kind === "ready" && !frames.length && <p className="stage-msg">No exposures of this field in detector {view.det}. Try another detector.</p>}
               <canvas ref={canvasRef} hidden={status.kind !== "ready" || !frames.length} />
@@ -679,6 +695,25 @@ export default function App() {
   // full screen replaces the page: nothing is drawn or fetched twice
   if (skyEl) return skyEl;
 
+  if (!view) {
+    return (
+      <Landing
+        targets={targets}
+        missions={MISSIONS}
+        source={source}
+        exposures={exposures}
+        input={input}
+        onInput={setInput}
+        inputError={inputError}
+        onSubmit={submit}
+        onTarget={(t) => openTarget(t)}
+        onMission={startMission}
+        opening={opening}
+        onCancelOpening={() => { openToken.current++; setOpening(null); }}
+      />
+    );
+  }
+
   return (
     <div className="app">
       <header className="top">
@@ -724,47 +759,6 @@ export default function App() {
           )}
         </div>
       </header>
-
-      {!view && (
-        <section className="start">
-          <h1>Watch the infrared sky change.</h1>
-          <p>SEDNA shows NASA SPHEREx images of any patch of sky as a short sequence in time, so anything that moved or changed stands out. Type coordinates above, or start with a one-minute mission.</p>
-          {source === "demo" && (
-            <p className="note-line" role="status">
-              The data service is not reachable, so SEDNA is running on prepared cases: the three missions, the five challenge targets and the distance controls. Typed coordinates need the live service.
-            </p>
-          )}
-          {targets.some((t) => t.id === "sedna") && (
-            <p className="namesake">
-              <button type="button" className="text ice" onClick={() => openTarget(targets.find((t) => t.id === "sedna")!)}>
-                SEDNA is named after 90377 Sedna, a world 83 au away. Can SPHEREx see it? →
-              </button>
-            </p>
-          )}
-          <h2 className="eyebrow">One-minute missions</h2>
-          <ul className="examples missions">
-            {MISSIONS.map((m, i) => (
-              <li key={m.id}>
-                <button type="button" onClick={() => startMission(m)} disabled={!targets.length}>
-                  <strong><span className="mono">{i + 1}</span> {m.title}</strong>
-                  <span>{m.teaser}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-          <h2 className="eyebrow">The challenge targets</h2>
-          <ul className="examples">
-            {targets.map((t) => (
-              <li key={t.id}>
-                <button type="button" onClick={() => openTarget(t)}>
-                  <strong>{t.name}</strong>
-                  <span>{t.note}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
 
       {view && (
         <main className={`viewer${modePanelEl ? " panel-mode" : ""}`}>

@@ -2,6 +2,7 @@
 // turn one knob until it snaps into focus, then check the distance against JPL Horizons.
 // Code written with AI assistance (Claude); see AI_USAGE.md.
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { OrbitalLoader } from "./Brand";
 import { ApiError, fetchFocus, fetchFocusAt, type Focus, type Target } from "./lib/api";
 import { renderFrame } from "./lib/render";
 import NextVisitPanel from "./NextVisitPanel";
@@ -189,7 +190,7 @@ export default function FocusPanel({ body, seed, controls, onOpen, onProgress, h
       </div>
 
       <div className="stage" role="img" aria-label={isFilm ? "Single SPHEREx exposures shown in sequence" : trial ? `Stack shifted for ${trial} astronomical units` : "Stack with no shift"}>
-        {status.kind === "loading" && <p className="stage-msg" role="status">Reading single exposures and stacking them for 73 trial distances…</p>}
+        {status.kind === "loading" && <div className="stage-msg"><OrbitalLoader>Reading single exposures and stacking them for 73 trial distances…</OrbitalLoader></div>}
         {status.kind === "error" && <p className="stage-msg error" role="alert">{status.message}</p>}
         <canvas ref={canvasRef} hidden={!ready} />
         {ready && (

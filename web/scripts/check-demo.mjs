@@ -15,8 +15,9 @@ const errors = [];
 let failures = 0;
 
 const browser = await chromium.launch();
-async function check(name, fn, viewport = { width: 1440, height: 900 }) {
-  const page = await browser.newPage({ viewport });
+// reduced motion: the brand intro and the start page's film stay still, so clicks never wait on an animation
+async function check(name, fn, viewport = { width: 1440, height: 900 }, reducedMotion = "reduce") {
+  const page = await browser.newPage({ viewport, reducedMotion });
   page.on("pageerror", (e) => errors.push(`${name}: ${e}`));
   try {
     const note = await fn(page);
@@ -33,11 +34,37 @@ const overflow = (page) => page.evaluate(() => document.documentElement.scrollWi
 
 await check("start page says prepared cases are in use", async (page) => {
   await page.goto(`${APP}/`);
-  await page.waitForSelector(".examples.missions button:not([disabled])", { timeout: T });
-  await page.getByText(/running on prepared cases/).waitFor({ timeout: T });
+  await page.waitForSelector(".landing-missions button:not([disabled])", { timeout: T });
+  await page.getByText(/Running on prepared cases/).first().waitFor({ timeout: T });
+  if ((await page.locator(".target-card").count()) !== 5) throw new Error("the five challenge targets are not all on the start page");
   await page.screenshot({ path: join(EVIDENCE, "demo-start-1440.png") });
   return (await page.locator(".credits").innerText()).replace(/\s+/g, " ").slice(-60);
 });
+
+for (const vp of [{ width: 1440, height: 900 }, { width: 1366, height: 657 }, { width: 390, height: 844 }]) {
+  await check(`start page fits one screen at ${vp.width} x ${vp.height}`, async (page) => {
+    await page.goto(`${APP}/`);
+    await page.waitForSelector(".target-card", { timeout: T });
+    const m = await page.evaluate(() => ({ h: document.documentElement.scrollHeight - innerHeight, w: document.documentElement.scrollWidth - innerWidth }));
+    if (m.h > 0 || m.w > 0) throw new Error(`page overflows by ${m.w} x ${m.h} px`);
+    await page.screenshot({ path: join(EVIDENCE, `demo-start-${vp.width}x${vp.height}.png`) });
+  }, vp);
+}
+
+await check("brand intro plays once a session and can be skipped", async (page) => {
+  await page.goto(`${APP}/`);
+  await page.waitForSelector(".intro .lockup", { timeout: T });
+  await page.getByRole("button", { name: "Skip intro" }).click();
+  await page.waitForSelector(".intro", { state: "detached", timeout: 3000 });
+  await page.getByRole("button", { name: /^Barnard's Star/ }).waitFor({ timeout: T });
+  await page.reload();
+  await page.waitForSelector(".target-card", { timeout: T });
+  await page.waitForTimeout(400);
+  if (await page.locator(".intro").count()) throw new Error("the intro played twice in one session");
+  await page.goto(`${APP}/?intro=convergence`);
+  await page.waitForSelector(".intro .lockup.convergence", { timeout: T });
+  await page.waitForSelector(".intro", { state: "detached", timeout: 8000 });
+}, { width: 1440, height: 900 }, "no-preference");
 
 for (const name of ["Barnard's Star", "WISE 0855-0714", "Epsilon Indi B", "RW Aurigae", "R Draconis"]) {
   await check(`${name}: sky, Gaia, movers, brightness`, async (page) => {
@@ -54,7 +81,7 @@ for (const name of ["Barnard's Star", "WISE 0855-0714", "Epsilon Indi B", "RW Au
 
 await check("90377 Sedna appears when stacked along its orbit", async (page) => {
   await page.goto(`${APP}/`);
-  await page.getByRole("button", { name: /named after 90377 Sedna/ }).click({ timeout: T });
+  await page.getByRole("button", { name: /Find 90377 Sedna/ }).click({ timeout: T });
   await page.waitForSelector(".follow .lens-summary", { timeout: T });
   const text = await page.locator(".follow .lens-summary").innerText();
   if (!/appears as a point at S\/N/.test(text)) throw new Error(`unexpected summary: ${text}`);

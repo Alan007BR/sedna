@@ -2,6 +2,7 @@
 // exposures are stacked along its orbit. Shows the result, its control and its limit.
 // Code written with AI assistance (Claude); see AI_USAGE.md.
 import { useEffect, useMemo, useState } from "react";
+import { OrbitalLoader } from "./Brand";
 import { ApiError } from "./lib/api";
 import { fetchFollow, followSummary, noiseLimits, visitLabel, type Follow } from "./lib/follow";
 import Stamp from "./Stamp";
@@ -41,7 +42,7 @@ export default function FollowPanel({ body, onDistance }: Props) {
         </p>
       </div>
 
-      {state.kind === "loading" && <p className="note-line" role="status">Stacking every SPHEREx exposure along Sedna&rsquo;s orbit…</p>}
+      {state.kind === "loading" && <OrbitalLoader className="inline" size={44}>Stacking every SPHEREx exposure along Sedna&rsquo;s orbit…</OrbitalLoader>}
       {state.kind === "error" && <p className="note-line error" role="alert">{state.message}</p>}
 
       {data && lim && (

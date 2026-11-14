@@ -2,6 +2,7 @@
 // within the visit is still there. Pause, click a point, and send it to the distance focus.
 // Code written with AI assistance (Claude); see AI_USAGE.md.
 import { useEffect, useMemo, useRef, useState } from "react";
+import { OrbitalLoader } from "./Brand";
 import { ApiError, fetchFilm, type Film } from "./lib/api";
 import { formatSexagesimal, gridToSky, skyToGrid } from "./lib/coords";
 import { categoryLabel, trackPointAt, type Mover } from "./lib/movers";
@@ -127,7 +128,7 @@ export default function FilmPanel({ ra, dec, fov, visit, startMjd, movers, onVis
         )}
       </div>
       <div className="stage" role="img" aria-label="Single SPHEREx exposures of this field, in time order" onClick={onClick}>
-        {status.kind === "loading" && <p className="stage-msg" role="status">Reading every single exposure of this visit…</p>}
+        {status.kind === "loading" && <div className="stage-msg"><OrbitalLoader>Reading every single exposure of this visit…</OrbitalLoader></div>}
         {status.kind === "error" && <p className="stage-msg error" role="alert">{status.message}</p>}
         <canvas ref={canvasRef} hidden={status.kind !== "ready"} />
         {film && (pick || marks.length > 0) && (

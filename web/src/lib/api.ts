@@ -19,13 +19,14 @@ export type GaiaSource = { id: string; ra: number; dec: number; pmRa: number | n
 export type Target = {
   id: string;
   name: string;
-  kind: "motion" | "brightness" | "distance";
+  kind: "motion" | "brightness" | "distance" | "follow";
   ra: number;
   dec: number;
   epoch: number;
   pmRa?: number;
   pmDec?: number;
   horizons?: string;
+  vMag?: number;
   note: string;
   source: string;
 };

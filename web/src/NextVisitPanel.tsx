@@ -5,40 +5,10 @@ import { ApiError } from "./lib/api";
 import { skyToGrid } from "./lib/coords";
 import { crop, fetchNextVisit, nextVisitSummary, type NextVisit, type NextVisitQuery } from "./lib/prediction";
 import { renderFrame } from "./lib/render";
+import Stamp from "./Stamp";
 
 const LIMITS = { lo: -0.5, hi: 4 };
 const ZOOM_HALF = 12; // 25 x 25 pixels, 2.6 arcmin
-
-function Crop({ img, label }: { img: Float32Array; label: string }) {
-  const ref = useRef<HTMLCanvasElement>(null);
-  const n = 2 * ZOOM_HALF + 1;
-  useEffect(() => {
-    const c = ref.current;
-    if (!c) return;
-    c.width = n;
-    c.height = n;
-    const ctx = c.getContext("2d")!;
-    const out = ctx.createImageData(n, n);
-    renderFrame(img, n, out, { limits: LIMITS, softening: 4, invert: false });
-    ctx.putImageData(out, 0, 0);
-  }, [img, n]);
-  return (
-    <figure className="zoom">
-      <div className="zoom-frame">
-        <canvas ref={ref} />
-        <svg viewBox={`0 0 ${n} ${n}`} aria-hidden="true">
-          <g stroke="var(--red-text)" strokeWidth={0.18} strokeLinecap="round">
-            <line x1={ZOOM_HALF + 0.5 - 4} y1={ZOOM_HALF + 0.5} x2={ZOOM_HALF + 0.5 - 2} y2={ZOOM_HALF + 0.5} />
-            <line x1={ZOOM_HALF + 0.5 + 2} y1={ZOOM_HALF + 0.5} x2={ZOOM_HALF + 0.5 + 4} y2={ZOOM_HALF + 0.5} />
-            <line x1={ZOOM_HALF + 0.5} y1={ZOOM_HALF + 0.5 - 4} x2={ZOOM_HALF + 0.5} y2={ZOOM_HALF + 0.5 - 2} />
-            <line x1={ZOOM_HALF + 0.5} y1={ZOOM_HALF + 0.5 + 2} x2={ZOOM_HALF + 0.5} y2={ZOOM_HALF + 0.5 + 4} />
-          </g>
-        </svg>
-      </div>
-      <figcaption>{label}</figcaption>
-    </figure>
-  );
-}
 
 export default function NextVisitPanel({ query, name }: { query: NextVisitQuery; name: string }) {
   const [state, setState] = useState<{ kind: "idle" } | { kind: "loading" } | { kind: "error"; message: string } | { kind: "ready"; data: NextVisit }>({ kind: "idle" });
@@ -98,8 +68,8 @@ export default function NextVisitPanel({ query, name }: { query: NextVisitQuery;
             const p = skyToGrid(data.found.ra, data.found.dec, data.grid.center, size, data.grid.pixelScaleArcsec);
             return (
               <div className="zooms" role="group" aria-label="Close-up of the detection">
-                <Crop img={crop(data.tracked, size, p.x, p.y, ZOOM_HALF)} label={`Following at ${data.distanceAu} au: a sharp point`} />
-                <Crop img={crop(data.static, size, p.x, p.y, ZOOM_HALF)} label="Fixed on the sky: fainter and smeared" />
+                <Stamp img={crop(data.tracked, size, p.x, p.y, ZOOM_HALF)} size={2 * ZOOM_HALF + 1} limits={LIMITS} label={`Following at ${data.distanceAu} au: a sharp point`} />
+                <Stamp img={crop(data.static, size, p.x, p.y, ZOOM_HALF)} size={2 * ZOOM_HALF + 1} limits={LIMITS} label="Fixed on the sky: fainter and smeared" />
               </div>
             );
           })()}

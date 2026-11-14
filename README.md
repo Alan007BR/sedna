@@ -23,6 +23,7 @@ Named after 90377 Sedna, found on 14 November 2003 by comparing images of the sa
 
 ## What it does
 
+- **Find Sedna.** 90377 Sedna, 83 au away at magnitude 20.8, is invisible in any single SPHEREx exposure (S/N 0.7). Stacked along its orbit over 161 exposures, with the stars removed using the same sky from other visits, it appears as a point at S/N 9.8, in each of its three visits; none of 200 control tracks comes close. The page says plainly why this works (the orbit is known) and what it means for fainter, unknown worlds.
 - **Three one-minute missions** for a first visit: watch Barnard's Star walk, see WISE 0855 appear only in the infrared, and measure Makemake's distance with the focus knob. Each step advances only when the person has done it, every claim is a measured result, and a mission can be shared as a link (`?mission=walk`).
 - **Any position, fast.** SEDNA keeps its own index of every SPHEREx exposure (272,963 detector-1 frames, April 2025 to October 2026), built from the public archive bucket. A lookup takes about 40 ms and does not depend on the archive's search services.
 - **Aligned visits.** Exposures are resampled onto one north-up grid and averaged per visit and detector, with one brightness stretch for all dates.

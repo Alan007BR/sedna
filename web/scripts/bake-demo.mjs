@@ -70,6 +70,13 @@ for (const name of ["Barnard's Star", "WISE 0855-0714", "Epsilon Indi B", "RW Au
   await page.waitForSelector(".lens-summary", { timeout: LONG });
 }
 
+// 1b. the namesake: 90377 Sedna stacked along its orbit
+step("90377 Sedna");
+await start();
+await page.getByRole("button", { name: /named after 90377 Sedna/ }).click();
+await page.waitForSelector(".follow .lens-summary", { timeout: LONG });
+cases.push({ id: "sedna", label: "90377 Sedna", url: new URL(page.url()).search });
+
 // 2. the three missions, played to the end
 step("mission: watch a star walk");
 await start();

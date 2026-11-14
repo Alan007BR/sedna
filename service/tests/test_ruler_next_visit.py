@@ -70,6 +70,17 @@ def test_moving_body_is_found_and_star_dipoles_are_rejected():
     assert found and found[0] == (40, 40)
 
 
+def test_follow_snr_sees_a_faint_centred_point_and_not_noise():
+    from sedna.follow_service import snr
+
+    rng = np.random.default_rng(11)
+    noise = rng.normal(0, 1.0, (21, 21))
+    assert abs(snr(noise)) < 4
+    # a point peaking at 6 sigma: its 3x3 sum (~24) over the 3x3-sum noise (~3) is about 8
+    assert snr(noise + gaussian((21, 21), 10, 10, 6.0)) > 6
+    assert snr(noise + gaussian((21, 21), 4, 4, 6.0)) < 4  # the same source off centre does not count
+
+
 def test_trail_mask_covers_a_star_swept_by_the_motion():
     static = np.zeros((41, 41))
     static[20, 20] = 10.0

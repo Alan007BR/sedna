@@ -153,6 +153,46 @@ class NextVisitResponse(BaseModel):
     source: Literal["archive", "cache"]
 
 
+class FollowStack(BaseModel):
+    label: str
+    start: str | None
+    end: str | None
+    exposures: int
+    snr: float
+    controlSd: float
+    controlMax: float
+    controlsAtOrAbove: int
+    controls: int
+    stack: str | None  # float32 little-endian, base64, row 0 south, stampSize x stampSize
+
+
+class FollowSingle(BaseModel):
+    date: str
+    detector: int
+    snr: float
+    medianSnr: float
+    stamp: str
+
+
+class FollowResponse(BaseModel):
+    schemaVersion: int
+    release: str
+    body: str
+    name: str
+    distanceAu: float
+    vMag: float | None
+    detectors: list[int]
+    wavelengthUm: tuple[float, float]
+    stampSize: int
+    pixelScaleArcsec: float
+    visits: list[FollowStack]
+    combined: FollowStack
+    single: FollowSingle | None
+    method: str
+    seconds: float
+    source: Literal["archive", "cache"]
+
+
 class RulerMark(BaseModel):
     distanceAu: float
     label: str

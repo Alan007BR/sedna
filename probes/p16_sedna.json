@@ -1,0 +1,126 @@
+{
+ "visits": 3,
+ "distance_au": 83.0,
+ "results": [
+  {
+   "set": "visit 1",
+   "detectors": "D1-D3",
+   "exposures": 52,
+   "snr": 4.81,
+   "control_sd": 1.14,
+   "control_max": 4.22,
+   "controls_at_or_above": 0,
+   "controls": 200
+  },
+  {
+   "set": "visit 1",
+   "detectors": "D4-D6",
+   "exposures": 52,
+   "snr": 2.93,
+   "control_sd": 1.12,
+   "control_max": 3.97,
+   "controls_at_or_above": 2,
+   "controls": 200
+  },
+  {
+   "set": "visit 1",
+   "detectors": "all",
+   "exposures": 104,
+   "snr": 6.6,
+   "control_sd": 1.26,
+   "control_max": 5.29,
+   "controls_at_or_above": 0,
+   "controls": 200
+  },
+  {
+   "set": "visit 2",
+   "detectors": "D1-D3",
+   "exposures": 52,
+   "snr": 3.35,
+   "control_sd": 1.13,
+   "control_max": 5.26,
+   "controls_at_or_above": 3,
+   "controls": 200
+  },
+  {
+   "set": "visit 2",
+   "detectors": "D4-D6",
+   "exposures": 53,
+   "snr": -0.34,
+   "control_sd": 1.05,
+   "control_max": 4.16,
+   "controls_at_or_above": 123,
+   "controls": 200
+  },
+  {
+   "set": "visit 2",
+   "detectors": "all",
+   "exposures": 105,
+   "snr": 1.93,
+   "control_sd": 1.06,
+   "control_max": 4.67,
+   "controls_at_or_above": 9,
+   "controls": 200
+  },
+  {
+   "set": "visit 3",
+   "detectors": "D1-D3",
+   "exposures": 57,
+   "snr": 5.61,
+   "control_sd": 1.05,
+   "control_max": 2.8,
+   "controls_at_or_above": 0,
+   "controls": 200
+  },
+  {
+   "set": "visit 3",
+   "detectors": "D4-D6",
+   "exposures": 56,
+   "snr": 1.31,
+   "control_sd": 1.04,
+   "control_max": 2.99,
+   "controls_at_or_above": 20,
+   "controls": 200
+  },
+  {
+   "set": "visit 3",
+   "detectors": "all",
+   "exposures": 113,
+   "snr": 5.38,
+   "control_sd": 1.0,
+   "control_max": 2.53,
+   "controls_at_or_above": 0,
+   "controls": 200
+  },
+  {
+   "set": "all visits",
+   "detectors": "D1-D3",
+   "exposures": 161,
+   "snr": 10.28,
+   "control_sd": 1.02,
+   "control_max": 2.78,
+   "controls_at_or_above": 0,
+   "controls": 200
+  },
+  {
+   "set": "all visits",
+   "detectors": "D4-D6",
+   "exposures": 161,
+   "snr": 1.83,
+   "control_sd": 1.09,
+   "control_max": 2.38,
+   "controls_at_or_above": 8,
+   "controls": 200
+  },
+  {
+   "set": "all visits",
+   "detectors": "all",
+   "exposures": 322,
+   "snr": 7.93,
+   "control_sd": 1.07,
+   "control_max": 3.21,
+   "controls_at_or_above": 0,
+   "controls": 200
+  }
+ ]
+}

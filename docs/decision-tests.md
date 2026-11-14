@@ -110,6 +110,25 @@ After the distance focus, SEDNA predicts where the body will be at SPHEREx's nex
 - **For a point the person picked:** the same check on the point picked in Makemake's field found it again, and IMCCE SkyBoT named it Makemake, 2.6″ away.
 - **Script:** `probes/p15_next_visit.py` → `probes/p15_next_visit.json`
 
+## 90377 Sedna, the namesake
+
+Can SPHEREx see the world this tool is named after? Sedna is 83 au away and shines at V = 20.8 (JPL Horizons), about thirty times fainter than Makemake.
+
+- **Method.** JPL Horizons gives Sedna's position, seen from SPHEREx, at each of the 322 exposures that cover it in three visits. Each exposure is put in units of its own noise; the stars are removed with a static sky made from 241–279 exposures of the same patch taken in other visits, months away, when Sedna was degrees off; stamps centred on Sedna are stacked with outlier rejection. Control: the same stamps along 200 tracks with Sedna's motion, shifted 1–4′ in random directions.
+- **Result, 0.73–2.44 µm (detectors 1–3), where reflected sunlight is strongest:**
+
+| Set | Exposures | S/N at Sedna | Control tracks as high or higher |
+| --- | --- | --- | --- |
+| Visit 1 (Aug 2025) | 52 | 4.8 | 0 of 200 |
+| Visit 2 (Jan 2026) | 52 | 3.3 | 2 of 200 |
+| Visit 3 (Aug 2026) | 57 | 5.6 | 0 of 200 |
+| All visits | 161 | **9.8** | 0 of 200 (highest 2.8) |
+
+- A typical single exposure reaches S/N 0.7. At 2.4–5 µm Sedna is not seen (S/N 1.8 for all visits), as expected for reflected sunlight.
+- **How the method was reached.** A first stack without subtracting the stars gave S/N 4.9, but the image showed faint stars beside Sedna: near quadrature Sedna moves only a few pixels within a visit, so the stars do not average out. A static sky from the same visit removed the stars but left too few exposures (S/N 3.3). Taking the static sky from other visits kept every exposure and removed the stars cleanly.
+- **What it means.** SPHEREx sees Sedna when its exposures are stacked along a known orbit. Finding a body this faint and still unknown needs its track first, which is what the distance focus does for brighter bodies. A hypothetical Planet Nine is expected to be fainter still in reflected light; SEDNA states that limit instead of promising it.
+- **Script:** `probes/p16_sedna.py` → `probes/p16_sedna.png`, `probes/p16_sedna.json`; in the product: `service/sedna/follow_service.py`, `/api/follow?body=sedna`, "Find Sedna" on the start page.
+
 ## Test 3 — cutouts straight from the bucket
 
 - IMAGE pixels are uncompressed big-endian float32 starting at byte 28,800 (pipeline 7.0.5), so a strip of rows is one range request.

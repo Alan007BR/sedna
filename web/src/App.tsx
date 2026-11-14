@@ -3,6 +3,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import FilmPanel, { type Seed } from "./FilmPanel";
 import FocusPanel, { type FocusStep } from "./FocusPanel";
+import FollowPanel from "./FollowPanel";
 import MissionCoach from "./MissionCoach";
 import MoversNote, { type MoversState } from "./MoversNote";
 import RulerPanel, { RulerMarks, type RulerState } from "./RulerPanel";
@@ -14,7 +15,7 @@ import { fetchRuler } from "./lib/prediction";
 import { onSourceChange, type Active } from "./lib/transport";
 import { differenceLimit, mean, renderDifference, renderFrame, sharedLimits, subtract } from "./lib/render";
 
-type Mode = "blink" | "diff" | "sum" | "film" | "focus";
+type Mode = "blink" | "diff" | "sum" | "film" | "focus" | "follow";
 const MODES: { id: Mode; label: string }[] = [
   { id: "blink", label: "Blink" },
   { id: "diff", label: "Difference" },
@@ -49,7 +50,7 @@ function readView(): View | null {
   if (!p.has("ra") || !p.has("dec") || !Number.isFinite(ra) || !Number.isFinite(dec) || ra < 0 || ra >= 360 || Math.abs(dec) > 90) return null;
   const fov = FOVS.includes(Number(p.get("fov"))) ? Number(p.get("fov")) : 6;
   const det = Number(p.get("band")) >= 1 && Number(p.get("band")) <= 6 ? Number(p.get("band")) : 2;
-  const mode = MODES.some((m) => m.id === p.get("mode")) ? (p.get("mode") as Mode) : "blink";
+  const mode = MODES.some((m) => m.id === p.get("mode")) || p.get("mode") === "follow" ? (p.get("mode") as Mode) : "blink";
   const fv = Math.max(0, Math.min(20, Math.round(Number(p.get("visit")) || 1) - 1));
   const ft = p.has("t") && Number.isFinite(Number(p.get("t"))) ? Number(p.get("t")) : null;
   return { ra, dec, fov, det, mode, target: p.get("target"), gaia: p.get("gaia") !== "0", invert: p.get("invert") === "1", fps: Number(p.get("speed")) || 2, fv, ft, bp: p.get("bright"), mission: missionById(p.get("mission"))?.id ?? null, ruler: p.get("ruler") === "1" };
@@ -124,9 +125,10 @@ export default function App() {
   }, []);
 
   // load the stack whenever the position or field changes
-  const queryKey = view ? `${view.ra.toFixed(5)}|${view.dec.toFixed(5)}|${view.fov}` : "";
+  // following Sedna needs no field stack: it shows its own stamps
+  const queryKey = view && view.mode !== "follow" ? `${view.ra.toFixed(5)}|${view.dec.toFixed(5)}|${view.fov}` : "";
   useEffect(() => {
-    if (!view) return;
+    if (!view || !queryKey) return;
     const ctrl = new AbortController();
     setStatus({ kind: "loading" });
     setStack(null);
@@ -217,6 +219,13 @@ export default function App() {
 
   async function openTarget(t: Target, extra: Partial<View> = {}) {
     setInput(t.name);
+    if (t.kind === "follow") {
+      const next: View = { ...(view ?? VIEW_DEFAULTS), ra: t.ra, dec: t.dec, target: t.id, mode: "follow", fv: 0, ft: null, bp: null, mission: null, ruler: false, ...extra };
+      writeView(next, true);
+      setView(next);
+      setInputError(null);
+      return;
+    }
     if (t.kind === "distance") {
       // a distant body has no fixed field: centre on where it was when the focus is seeded
       let ra = t.ra;
@@ -557,6 +566,13 @@ export default function App() {
               The data service is not reachable, so SEDNA is running on prepared cases: the three missions, the five challenge targets and the distance controls. Typed coordinates need the live service.
             </p>
           )}
+          {targets.some((t) => t.id === "sedna") && (
+            <p className="namesake">
+              <button type="button" className="text ice" onClick={() => openTarget(targets.find((t) => t.id === "sedna")!)}>
+                SEDNA is named after 90377 Sedna, a world 83 au away. Can SPHEREx see it? →
+              </button>
+            </p>
+          )}
           <h2 className="eyebrow">One-minute missions</h2>
           <ul className="examples missions">
             {MISSIONS.map((m, i) => (
@@ -594,7 +610,7 @@ export default function App() {
                 </button>
               ))}
             </div>
-            {view.mode !== "focus" && (
+            {view.mode !== "focus" && view.mode !== "follow" && (
             <div className="group" role="group" aria-label="Field of view">
               <span className="eyebrow">Field of view</span>
               <div className="chips">
@@ -608,7 +624,9 @@ export default function App() {
             )}
           </aside>
 
-          {view.mode === "focus" ? (
+          {view.mode === "follow" ? (
+            <FollowPanel body={view.target ?? "sedna"} onDistance={() => startMission(MISSIONS[2])} />
+          ) : view.mode === "focus" ? (
             <FocusPanel
               body={target?.kind === "distance" ? target : null}
               seed={target?.kind === "distance" ? null : seed}
@@ -670,7 +688,7 @@ export default function App() {
           </section>
           )}
 
-          <aside className="rail right" hidden={view.mode === "focus" || view.mode === "film"}>
+          <aside className="rail right" hidden={view.mode === "focus" || view.mode === "film" || view.mode === "follow"}>
             <div className="group" role="group" aria-label="Detector">
               <span className="eyebrow">Detector</span>
               {DETECTORS.map((d) => (
@@ -698,7 +716,7 @@ export default function App() {
             </div>
           </aside>
 
-          <footer className="timeline" hidden={view.mode === "focus" || view.mode === "film"}>
+          <footer className="timeline" hidden={view.mode === "focus" || view.mode === "film" || view.mode === "follow"}>
             {playbackEl}
             <button type="button" className="speed mono" onClick={() => update({ fps: view.fps === 1 ? 2 : view.fps === 2 ? 4 : 1 })} aria-label="Blink speed">
               {view.fps} fps

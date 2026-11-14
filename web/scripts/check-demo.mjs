@@ -52,6 +52,16 @@ for (const name of ["Barnard's Star", "WISE 0855-0714", "Epsilon Indi B", "RW Au
   });
 }
 
+await check("90377 Sedna appears when stacked along its orbit", async (page) => {
+  await page.goto(`${APP}/`);
+  await page.getByRole("button", { name: /named after 90377 Sedna/ }).click({ timeout: T });
+  await page.waitForSelector(".follow .lens-summary", { timeout: T });
+  const text = await page.locator(".follow .lens-summary").innerText();
+  if (!/appears as a point at S\/N/.test(text)) throw new Error(`unexpected summary: ${text}`);
+  await page.screenshot({ path: join(EVIDENCE, "demo-sedna-1440.png"), fullPage: true });
+  return text.slice(0, 80);
+});
+
 await check("mission 1 played to the end", async (page) => {
   await page.goto(`${APP}/`);
   await page.getByRole("button", { name: /Watch a star walk/ }).click({ timeout: T });

@@ -26,7 +26,10 @@ from .focus_service import focus_body
 from .brightness_service import measure_point, neighbours
 from .brightness_service import wavemap as brightness_wavemap
 from .archive import horizons
-from .models import BrightnessResponse, MoversResponse, NextVisitResponse, RulerResponse
+from .follow_service import CONTROLS as FOLLOW_CONTROLS
+from .follow_service import STAMP as FOLLOW_STAMP
+from .follow_service import follow
+from .models import BrightnessResponse, FollowResponse, MoversResponse, NextVisitResponse, RulerResponse
 from .movers_service import MAX_RATE_ARCSEC_H, VISIBLE_V, movers_in_field
 from .next_visit_service import DISTANCE_SPREAD as NV_SPREAD
 from .next_visit_service import MAX_EXPOSURES as NV_MAX
@@ -250,6 +253,68 @@ def _next_visit_payload(body: str | None, name: str, seed: dict, distance: float
         }
     base["seconds"] = round(time.time() - t0, 2)
     return base
+
+
+@app.get("/api/follow", response_model=FollowResponse)
+def follow_body(body: str):
+    """Stack every exposure of a known faint body along its JPL Horizons track (built for 90377 Sedna)."""
+    target = TARGETS.get(body)
+    if not target or target.get("kind") != "follow":
+        raise HTTPException(404, detail={"code": "TARGET_NOT_FOUND", "message": "Following along a known orbit is prepared for 90377 Sedna."})
+    key = hashlib.sha1(f"follow|{SCHEMA}|{body}|{index().n}".encode()).hexdigest()
+    path = CACHE / f"{key}.json"
+    if path.exists():
+        payload = json.loads(path.read_text())
+        payload["source"] = "cache"
+        return payload
+    t0 = time.time()
+    try:
+        res = follow(index(), target["horizons"])
+    except LookupError as err:
+        raise HTTPException(404, detail={"code": "OUT_OF_COVERAGE", "message": str(err)})
+
+    def pack(s: dict, label: str) -> dict:
+        return {
+            "label": label,
+            "start": iso(s["start"]) if "start" in s else None,
+            "end": iso(s["end"]) if "end" in s else None,
+            "exposures": s["exposures"],
+            "snr": round(s["snr"], 2),
+            "controlSd": round(s["control_sd"], 2),
+            "controlMax": round(s["control_max"], 2),
+            "controlsAtOrAbove": s["controls_at_or_above"],
+            "controls": s["controls"],
+            "stack": encode(np.nan_to_num(s["stack"], nan=0.0)) if s["stack"] is not None else None,
+        }
+
+    single = res["single"]
+    payload = {
+        "schemaVersion": SCHEMA,
+        "release": RELEASE,
+        "body": body,
+        "name": target["name"],
+        "distanceAu": round(res["distance_au"], 1),
+        "vMag": target.get("vMag"),
+        "detectors": res["detectors"],
+        "wavelengthUm": [DETECTOR_RANGE_UM[min(res["detectors"])][0], DETECTOR_RANGE_UM[max(res["detectors"])][1]],
+        "stampSize": FOLLOW_STAMP,
+        "pixelScaleArcsec": PIXEL_ARCSEC,
+        "visits": [pack(s, f"Visit {i + 1}") for i, s in enumerate(res["visits"])],
+        "combined": pack(res["combined"], "All visits"),
+        "single": None
+        if single is None
+        else {"date": iso(single["mjd"]), "detector": single["detector"], "snr": round(single["snr"], 2), "medianSnr": round(single["median_snr"], 2), "stamp": encode(np.nan_to_num(single["stamp"], nan=0.0))},
+        "method": (
+            "Each exposure's position of the body comes from JPL Horizons with SPHEREx as the observer. The stars are removed with a static sky "
+            "made from exposures of the same patch taken in other visits, months away, when the body was degrees off. Stamps centred on the body "
+            f"are stacked with outlier rejection. Control: the same stamps along {FOLLOW_CONTROLS} tracks with the body's motion, shifted 1-4 arcmin."
+        ),
+        "seconds": round(time.time() - t0, 1),
+        "source": "archive",
+    }
+    CACHE.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload))
+    return payload
 
 
 @app.get("/api/next-visit", response_model=NextVisitResponse)

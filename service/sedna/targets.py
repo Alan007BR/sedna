@@ -54,6 +54,15 @@ TARGETS = {
         "source": "AAVSO VSX (OID 13673): Mira, period 246.12 d, V 6.7-13.2",
         "note": "Mira variable in SPHEREx's northern deep field: 2,589 exposures follow its 246-day pulsation.",
     },
+    "sedna": {
+        "name": "90377 Sedna",
+        "kind": "follow",
+        "horizons": "90377",
+        "ra": 60.7, "dec": 8.6, "epoch": 2025.8,
+        "vMag": 20.8,
+        "source": "JPL Horizons, SPHEREx as observer (V from JPL Horizons)",
+        "note": "The world this tool is named after, 83 au away. Invisible in any single SPHEREx exposure; stack 161 along its orbit and it appears.",
+    },
     "makemake": {
         "name": "Makemake",
         "kind": "distance",

@@ -35,7 +35,7 @@ type Props = {
   epoch: number;
   mode: ViewMode;
   appMode: string;
-  modes: { id: string; label: string }[];
+  modes: { id: string; label: string; help?: string }[];
   limits: Limits;
   invert: boolean;
   status: string | null;
@@ -344,10 +344,11 @@ export default function SkyView(p: Props) {
     <div className="hud-group" role="group" aria-label="Compare">
       <span className="eyebrow">Compare</span>
       {p.modes.map((m) => (
-        <button key={m.id} type="button" className="opt" aria-pressed={p.appMode === m.id} onClick={() => p.onMode(m.id)}>
+        <button key={m.id} type="button" className="opt" aria-pressed={p.appMode === m.id} onClick={() => p.onMode(m.id)} aria-describedby="sky-mode-help">
           <span className="dot" />{m.label}
         </button>
       ))}
+      {p.modes.find((m) => m.id === p.appMode)?.help && <p className="mode-help" id="sky-mode-help">{p.modes.find((m) => m.id === p.appMode)?.help}</p>}
     </div>
   );
   const layersPanel = (
@@ -449,7 +450,8 @@ export default function SkyView(p: Props) {
       </header>
       {ready && (
         <p className="hud hud-caption mono">
-          <span className="now">{p.caption[0]}</span> {p.caption.slice(1).join(" · ")}
+          <span className="now">{p.caption[0]}</span>
+          {p.caption.length > 1 && <span>{p.caption.slice(1).join(" · ")}</span>}
         </p>
       )}
 

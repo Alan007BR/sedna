@@ -14,6 +14,7 @@ type Props = {
   dec: number;
   fov: number;
   visit: number;
+  visitLabels?: string[] | null; // the blink's dates for the same visits, when both count them alike
   startMjd: number | null; // open at the exposure closest to this time, paused
   movers: Mover[];
   onVisit: (visit: number) => void;
@@ -22,7 +23,7 @@ type Props = {
 
 const LIMITS = { lo: -0.8, hi: 12 };
 
-export default function FilmPanel({ ra, dec, fov, visit, startMjd, movers, onVisit, onFocus }: Props) {
+export default function FilmPanel({ ra, dec, fov, visit, visitLabels, startMjd, movers, onVisit, onFocus }: Props) {
   const [film, setFilm] = useState<Film | null>(null);
   const [status, setStatus] = useState<{ kind: "loading" | "ready" | "error"; message?: string }>({ kind: "loading" });
   const [frame, setFrame] = useState(0);
@@ -84,6 +85,7 @@ export default function FilmPanel({ ra, dec, fov, visit, startMjd, movers, onVis
 
   const size = film?.grid.size ?? 1;
   const current = film?.frames[Math.min(frame, (film?.frames.length ?? 1) - 1)];
+  const labels = film && visitLabels && visitLabels.length === film.visits ? visitLabels : null;
   const inVisit = useMemo(() => (film ? movers.filter((m) => m.visit === film.visit) : []), [film, movers]);
   const marks = useMemo(() => {
     if (!film || !current || !showKnown) return [];
@@ -121,7 +123,7 @@ export default function FilmPanel({ ra, dec, fov, visit, startMjd, movers, onVis
           <>
             <span className="now">{current.date.slice(0, 16)}</span>
             <span>exposure {frame + 1} of {film.frames.length} · D{current.detector}</span>
-            <span>visit {film.visit + 1} of {film.visits}</span>
+            <span>visit {film.visit + 1} of {film.visits}{labels ? ` · ${labels[film.visit]}` : ""}</span>
           </>
         ) : (
           <span>&nbsp;</span>
@@ -160,7 +162,7 @@ export default function FilmPanel({ ra, dec, fov, visit, startMjd, movers, onVis
               <div className="chips" role="group" aria-label="Visit">
                 <span className="eyebrow">Visit</span>
                 {Array.from({ length: film.visits }, (_, v) => (
-                  <button key={v} type="button" className="opt mono" aria-pressed={film.visit === v} onClick={() => onVisit(v)}>{v + 1}</button>
+                  <button key={v} type="button" className="opt mono" aria-pressed={film.visit === v} onClick={() => onVisit(v)}>{v + 1}{labels ? ` · ${labels[v]}` : ""}</button>
                 ))}
               </div>
             )}

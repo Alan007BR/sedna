@@ -199,7 +199,7 @@ a { color: inherit; }
 .hud-tl { top: 14px; left: 14px; display: grid; gap: 4px; padding: 10px 14px 10px; min-width: 240px; }
 .hud-tl strong { font-size: 17px; line-height: 22px; font-weight: 500; }
 .hud-tl .mono { font-size: 11px; line-height: 15px; color: var(--muted); white-space: pre; }
-.hud-caption { top: 118px; left: 14px; margin: 0; padding: 4px 9px; font-size: 11px; line-height: 16px; color: var(--muted-strong); }
+.hud-caption { top: 118px; left: 14px; margin: 0; padding: 5px 9px; display: grid; gap: 1px; max-width: 300px; font-size: 11px; line-height: 16px; color: var(--muted-strong); }
 .hud-caption .now { color: var(--fg); }
 .hud-tr { top: 14px; right: 14px; display: flex; align-items: center; gap: 2px; padding: 4px 6px; }
 .hud-icon { width: 36px; height: 36px; display: grid; place-items: center; color: var(--muted-strong); border-radius: 4px; }
@@ -628,4 +628,14 @@ a { color: inherit; }
 @media (max-width: 640px) and (max-height: 780px) {
   .landing-eyebrow, .landing-lede, .landing-film figcaption { display: none; }
   .landing-band { padding-top: 6px; }
+}
+
+/* plain words beside the controls: what a mode shows, what a detector is, what an au is */
+.mode-help { margin: 4px 0 0; max-width: 220px; font-size: 12px; line-height: 17px; color: var(--muted); text-align: right; text-wrap: pretty; }
+.hud .mode-help { max-width: 200px; text-align: left; font-size: 11px; line-height: 15px; }
+.focus-unit { max-width: none; text-align: left; margin-top: 2px; }
+.stage-wrap > .caption span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 820px) {
+  .mode-help { max-width: none; width: 100%; text-align: left; }
+  .stage-wrap > .caption .wavelength { display: none; }
 }

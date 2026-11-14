@@ -15,19 +15,12 @@ import { advance, missionById, MISSIONS, type Mission, type MissionContext } fro
 import { fetchMovers } from "./lib/movers";
 import { fetchRuler } from "./lib/prediction";
 import { fetchResolve, notFoundMessage, positionAt, unavailableMessage } from "./lib/resolve";
+import { DETECTOR_HELP, exposuresLabel, modeHelp, MODES, visitTitle, type Mode } from "./lib/modes";
 import { onSourceChange, type Active } from "./lib/transport";
 import { paintStack, sharedLimits, type ViewMode } from "./lib/render";
 import SkyView from "./SkyView";
 import StarCard from "./StarCard";
 
-type Mode = "blink" | "diff" | "sum" | "film" | "focus" | "follow";
-const MODES: { id: Mode; label: string }[] = [
-  { id: "blink", label: "Blink" },
-  { id: "diff", label: "Difference" },
-  { id: "sum", label: "Sum" },
-  { id: "film", label: "Single exposures" },
-  { id: "focus", label: "Distance focus" },
-];
 // fv: single-exposure visit (0-based; 1-based in the URL); ft: open the single exposures at this MJD
 // bp: brightness lens on a built-in target id, or on a point "ra,dec"; mission: guided mission id; ruler: parallax ruler on
 type View = { ra: number; dec: number; fov: number; det: number; mode: Mode; target: string | null; gaia: boolean; invert: boolean; fps: number; fv: number; ft: number | null; bp: string | null; mission: string | null; ruler: boolean; sky: boolean };
@@ -473,10 +466,10 @@ export default function App() {
                       ? `${dateLabel(frames[frames.length - 1].start)} − ${dateLabel(frames[0].start)}`
                       : view.mode === "sum"
                         ? `Sum of ${frames.length} visits`
-                        : dateLabel(current.start)}
+                        : stack ? visitTitle(current.visit, stack.visits.length, dateLabel(current.start)) : dateLabel(current.start)}
                   </span>
-                  <span>D{view.det} · {DETECTORS[view.det - 1].range}</span>
-                  <span>{view.mode === "blink" ? `${current.exposures} exp.` : `${frames.reduce((s, f) => s + f.exposures, 0)} exp.`}</span>
+                  <span className="wavelength">D{view.det} · {DETECTORS[view.det - 1].range}</span>
+                  <span>{exposuresLabel(view.mode === "blink" ? current.exposures : frames.reduce((s, f) => s + f.exposures, 0), view.mode === "blink")}</span>
                 </>
               ) : (
                 <span>&nbsp;</span>
@@ -635,6 +628,7 @@ export default function App() {
               visit={view.fv}
               startMjd={view.ft}
               movers={movers.kind === "ready" ? movers.data.movers.filter((m) => m.visible) : []}
+              visitLabels={stack ? stack.visits.map((v) => dateLabel(v.start)) : null}
               onVisit={(v) => update({ fv: v, ft: null }, true)}
               onFocus={(s) => { setSeed(s); update({ mode: "focus", target: null }, true); }}
             />
@@ -669,9 +663,9 @@ export default function App() {
         caption={
           current
             ? [
-                view.mode === "diff" && frames.length > 1 ? `${dateLabel(frames[frames.length - 1].start)} − ${dateLabel(frames[0].start)}` : view.mode === "sum" ? `Sum of ${frames.length} visits` : dateLabel(current.start),
+                view.mode === "diff" && frames.length > 1 ? `${dateLabel(frames[frames.length - 1].start)} − ${dateLabel(frames[0].start)}` : view.mode === "sum" ? `Sum of ${frames.length} visits` : stack ? visitTitle(current.visit, stack.visits.length, dateLabel(current.start)) : dateLabel(current.start),
                 `D${view.det} · ${DETECTORS[view.det - 1].range}`,
-                `${view.mode === "diff" || view.mode === "sum" ? frames.reduce((n, f) => n + f.exposures, 0) : current.exposures} exp.`,
+                exposuresLabel(view.mode === "diff" || view.mode === "sum" ? frames.reduce((n, f) => n + f.exposures, 0) : current.exposures, view.mode !== "diff" && view.mode !== "sum"),
               ]
             : [`D${view.det} · ${DETECTORS[view.det - 1].range}`]
         }
@@ -789,11 +783,12 @@ export default function App() {
             <div className="group" role="group" aria-label="Compare mode">
               <span className="eyebrow">Compare</span>
               {MODES.map((m) => (
-                <button key={m.id} type="button" className="opt" aria-pressed={view.mode === m.id} onClick={() => update({ mode: m.id })}>
+                <button key={m.id} type="button" className="opt" aria-pressed={view.mode === m.id} onClick={() => update({ mode: m.id })} aria-describedby="mode-help">
                   <span className="dot" />
                   {m.label}
                 </button>
               ))}
+              {modeHelp(view.mode) && <p className="mode-help" id="mode-help">{modeHelp(view.mode)}</p>}
             </div>
             {!modePanelEl && (
               <div className="group" role="group" aria-label="Detector">
@@ -806,6 +801,7 @@ export default function App() {
                   ))}
                 </div>
                 <span className="sub mono det-range">{DETECTORS[view.det - 1].range}</span>
+                <span className="mode-help">{DETECTOR_HELP}</span>
               </div>
             )}
             {view.mode !== "focus" && view.mode !== "follow" && (

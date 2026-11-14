@@ -221,7 +221,7 @@ export default function FocusPanel({ body, seed, controls, onOpen, onProgress, h
         <>
           <div className="focus-controls">
             <div className="focus-readout">
-              <span className="eyebrow">Trial distance</span>
+              <span className="eyebrow">Trial distance from SPHEREx</span>
               <span className="focus-value mono">{trial === null ? "∞" : trial.toFixed(1)}<small>{trial === null ? " fixed stars" : " au"}</small></span>
             </div>
             <div className="focus-knob">
@@ -233,7 +233,7 @@ export default function FocusPanel({ body, seed, controls, onOpen, onProgress, h
                 {revealed && truth !== null && <line x1={xOf(trueIndex)} y1={0} x2={xOf(trueIndex)} y2={30} stroke="var(--ice)" strokeWidth={1} strokeDasharray="2 2" vectorEffect="non-scaling-stroke" />}
                 {di < n - 1 && <line x1={xOf(di)} y1={0} x2={xOf(di)} y2={30} stroke="var(--red-text)" strokeWidth={1.4} vectorEffect="non-scaling-stroke" />}
               </svg>
-              <label htmlFor="focus-range" className="sr">Trial distance, from 25 astronomical units to infinity</label>
+              <label htmlFor="focus-range" className="sr">Trial distance from SPHEREx, from 25 astronomical units to infinity</label>
               <input
                 id="focus-range" type="range" min={0} max={n - 1} step={1} value={di}
                 onChange={(e) => {
@@ -243,6 +243,7 @@ export default function FocusPanel({ body, seed, controls, onOpen, onProgress, h
                 }}
               />
               <div className="focus-scale mono"><span>25 au</span><span>100</span><span>600</span><span>∞</span></div>
+              <p className="mode-help focus-unit">1 au is the distance from the Earth to the Sun, about 150 million km. Neptune is at 30 au.</p>
             </div>
             <button type="button" className="primary" onClick={snap}>Find the focus</button>
           </div>

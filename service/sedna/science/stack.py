@@ -19,7 +19,8 @@ from ..archive.cutout import Cutout, read_cutout
 from ..archive.skyindex import Hit, SkyIndex, split_visits
 
 PIXEL_ARCSEC = 6.15
-DETECTOR_RANGE_UM = {1: (0.75, 1.09), 2: (1.10, 1.62), 3: (1.63, 2.41), 4: (2.42, 3.82), 5: (3.83, 4.41), 6: (4.42, 5.00)}
+# from the pipeline's wavelength maps (archive/wavelength.py), rounded outward
+DETECTOR_RANGE_UM = {1: (0.73, 1.13), 2: (1.08, 1.67), 3: (1.61, 2.44), 4: (2.39, 3.87), 5: (3.79, 4.45), 6: (4.40, 5.03)}
 
 
 @dataclass

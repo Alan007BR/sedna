@@ -114,6 +114,26 @@ Script: `probes/p11_motion_targets.py TARGET 10` → `docs/targets/TARGET.png` a
 - **Period from the data alone** (Lomb–Scargle, D1 and D3 together): 235 days, half-power range 192–312 days; AAVSO VSX gives 246.12 days. D1 alone picks a 133-day alias, because of gaps in the sampling.
 - **Reading:** the 246-day pulsation is visible and in phase with the AAVSO prediction. Single points scatter by about half a magnitude, so this is a light curve for the eye, not precision photometry. D4 shows no clear pulsation.
 
+## The brightness lens in the product
+
+The R Draconis lesson became the product's method for any point (`service/sedna/science/photometry.py`, `/api/brightness`):
+
+1. **Exact wavelength.** Each exposure's wavelength at the point comes from the pipeline's own spectral WCS (extension WCS-WAVE), evaluated once per detector. `probes/p14_wavelength.py` showed the map is identical in exposures months apart and across releases. It replaced the "row ÷ 120" approximation and corrected the detector ranges (D1 is 0.735–1.126 µm, not 0.75–1.09).
+2. **Native pixels.** Every exposure is measured on its own pixels at the position given by its own WCS: a 2-pixel aperture, or the 3–7 pixel wings when more than a fifth of the exposures have a saturated core.
+3. **Like with like.** Exposures are grouped into 17 channels per detector (equal steps in log wavelength) and into time bins (one per visit, or 10-day slices in the deep fields). A median polish splits the magnitudes into a channel term (the spectrum) and a time term (the change). Only channels seen in two or more bins count. Changes are relative to the median over bins.
+4. **Spectrum.** For unsaturated points, every exposure of a time bin is one point at its own wavelength. For saturated stars no spectrum is shown, because the wings widen with wavelength.
+
+Results as the tool shows them:
+
+| Target | Lens result | Earlier result above |
+| --- | --- | --- |
+| RW Aurigae, September 2025 → September 2026 | D1 −0.52, D2 −0.36, D3 −0.08, D4 +0.17, D5 +0.72, D6 +0.72 mag; spectrum rising from 0.1 Jy at 0.75 µm to about 2 Jy at 5 µm | D1 −0.21, D2 −0.22, D3 −0.05, D4 +0.53, D5 +0.73, D6 +0.75 mag |
+| R Draconis, April 2025 → September 2026 (wings, 1,151 of 2,589 exposures) | Varies by up to 2.3 mag; D3 1.85 mag fainter in June 2026 than in April 2025 | Amplitude 1.5–1.95 mag at the AAVSO period |
+
+- **Where they agree:** D3, D5 and D6 of RW Aurigae, and R Draconis's amplitude.
+- **Where they differ:** RW Aurigae's D1, D2 and D4, by 0.1–0.35 mag. The earlier numbers compare visit averages. Each average mixes whichever channels that visit happened to sample, and D4 spans 2.4–3.9 µm, where the spectrum changes steeply. The lens compares each channel only with itself, so its values are the ones to trust; the gap shows how much a channel mix can bias a broad-band comparison.
+- **Tests:** synthetic images and measurements in `service/tests/test_photometry.py` (aperture flux against the analytic value, saturated cores, a red spectrum fading by 0.5 mag seen through different channels in each bin); chart definitions against a recorded response in `web/src/lib/brightness.test.ts`.
+
 ## Corrections made while building this matrix
 
 - Epsilon Indi B's position in the tool was a rough 2000-era value; it now uses Gaia DR3 6412596012146801152.

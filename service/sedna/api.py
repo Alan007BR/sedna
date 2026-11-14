@@ -22,7 +22,9 @@ from .archive.skybot import known_object
 from .archive.skyindex import SkyIndex
 from .science import parallax
 from .focus_service import focus_body
-from .models import MoversResponse
+from .brightness_service import measure_point
+from .brightness_service import wavemap as brightness_wavemap
+from .models import BrightnessResponse, MoversResponse
 from .movers_service import MAX_RATE_ARCSEC_H, VISIBLE_V, movers_in_field
 from .science.focus import INFINITY_AU, judge
 from .science.stack import DETECTOR_RANGE_UM, PIXEL_ARCSEC, build_stack
@@ -223,6 +225,74 @@ def focus(body: str, visit: int = Query(0, ge=0, le=20)):
         },
         "unit": "each exposure divided by its own noise, then median-stacked",
         "assumption": "The body is assumed to follow a circular, prograde orbit in the ecliptic. Distances come out within about 10% for such orbits and up to 40% off for eccentric ones.",
+        "seconds": round(time.time() - t0, 2),
+        "source": "archive",
+    }
+    CACHE.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload))
+    return payload
+
+
+@app.get("/api/brightness", response_model=BrightnessResponse)
+def brightness(ra: float = Query(..., ge=0, lt=360), dec: float = Query(..., ge=-90, le=90), target: str | None = None):
+    """Spectrum per time bin and change in brightness over time for one point (built-in targets follow their proper motion)."""
+    t = TARGETS.get(target) if target else None
+    key = hashlib.sha1(f"brightness|{SCHEMA}|{ra:.5f}|{dec:.5f}|{target if t else ''}|{index().n}".encode()).hexdigest()
+    path = CACHE / f"{key}.json"
+    if path.exists():
+        payload = json.loads(path.read_text())
+        payload["source"] = "cache"
+        return payload
+    t0 = time.time()
+    position_at = (lambda mjd: propagate(t, mjd)) if t and t.get("pmRa") is not None else None
+    method, exposures, available, change = measure_point(index(), ra, dec, position_at=position_at)
+    if not exposures:
+        raise HTTPException(404, detail={"code": "OUT_OF_COVERAGE", "message": "SPHEREx has no usable exposure of this point in the indexed data."})
+    wm = brightness_wavemap()
+    bins = []
+    for b in sorted({e.bin for e in exposures}):
+        sel = [e.mjd for e in exposures if e.bin == b]
+        bins.append({"index": b, "start": iso(min(sel)), "end": iso(max(sel)), "midMjd": float(np.mean(sel)), "exposures": len(sel)})
+    mid = {b["index"]: b["midMjd"] for b in bins}
+    finite = lambda v: None if not np.isfinite(v) else round(float(v), 3)  # noqa: E731
+    payload = {
+        "schemaVersion": SCHEMA,
+        "release": RELEASE,
+        "point": {"ra": ra, "dec": dec},
+        "target": target if t else None,
+        "method": method,
+        "methodNote": (
+            "Flux within 12 arcsec (2 pixels) of the point, background from a ring 30-48 arcsec out; not corrected for light outside the aperture."
+            if method == "aperture"
+            else "The star's core is saturated in many exposures, so every exposure is measured in the unsaturated wings (18-42 arcsec from the centre). Changes over time are reliable; the spectrum's shape is not, because the wings widen with wavelength."
+        ),
+        "unit": "µJy",
+        "exposuresAvailable": available,
+        "exposuresMeasured": len(exposures),
+        "bins": bins,
+        "exposures": [
+            {
+                "mjd": e.mjd,
+                "date": iso(e.mjd),
+                "detector": e.det,
+                "wavelengthUm": round(e.wavelength, 4),
+                "bandwidthUm": round(e.bandwidth, 4),
+                "flux": finite(e.flux),
+                "fluxErr": finite(e.error),
+                "saturatedPixels": e.nan_core,
+                "bin": e.bin,
+            }
+            for e in exposures
+        ],
+        "change": [
+            {
+                "detector": det,
+                "rangeUm": [round(v, 3) for v in wm.range_um(det)],
+                "points": [{"bin": p.bin, "midMjd": mid[p.bin], "deltaMag": round(p.delta_mag, 4), "error": round(p.error, 4), "channels": p.channels, "exposures": p.exposures, "reliable": p.channels >= 3} for p in pts],
+            }
+            for det, pts in sorted(change.items())
+            if pts
+        ],
         "seconds": round(time.time() - t0, 2),
         "source": "archive",
     }

@@ -13,6 +13,13 @@
   --red-text: #e0694a;
   --ice: #8fb6c9;
   --warn: #e2b25c;
+  /* detector series, ordered by wavelength (brand system chartD1…chartD6) */
+  --chart-d1: #6fa8ff;
+  --chart-d2: #3ec7b0;
+  --chart-d3: #b6d65a;
+  --chart-d4: #f2c14e;
+  --chart-d5: #f08a4b;
+  --chart-d6: #e05f8f;
   --font-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-data: "IBM Plex Mono", ui-monospace, Consolas, monospace;
 }
@@ -52,8 +59,11 @@ a { color: inherit; }
 .examples strong { font-weight: 500; }
 .examples span { color: var(--muted); }
 
-.viewer { display: grid; grid-template-columns: minmax(120px, 1fr) auto minmax(120px, 1fr); grid-template-rows: 1fr auto; gap: 18px 28px; align-items: center; min-height: 0; }
-.rail { display: grid; gap: 22px; align-content: center; }
+.viewer { --stage: min(86vw, 62vh, 620px); display: grid; grid-template-columns: minmax(120px, 1fr) auto minmax(120px, 1fr); grid-template-rows: 1fr auto; gap: 18px 28px; align-items: start; min-height: 0; }
+/* rails stay level with the stage when the lens or notes make the centre column taller */
+.rail { display: grid; gap: 22px; align-content: start; }
+.rail.left { margin-top: max(0px, calc(var(--stage) / 2 - 109px)); }
+.rail.right { margin-top: max(0px, calc(var(--stage) / 2 - 163px)); }
 .rail.left { justify-items: end; }
 .rail.left .group { justify-items: end; }
 .group { display: grid; gap: 4px; }
@@ -70,7 +80,7 @@ a { color: inherit; }
 .stage-wrap { display: grid; gap: 10px; justify-items: center; }
 .caption, .readout { width: 100%; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 11px; line-height: 16px; color: var(--muted); min-height: 16px; }
 .caption .now { color: var(--muted-strong); }
-.stage { position: relative; width: min(86vw, 62vh, 620px); aspect-ratio: 1; background: #000; cursor: crosshair; }
+.stage { position: relative; width: var(--stage, min(86vw, 62vh, 620px)); aspect-ratio: 1; background: #000; cursor: crosshair; }
 .stage canvas, .stage svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .stage canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
 .stage svg { pointer-events: none; }
@@ -88,6 +98,29 @@ a { color: inherit; }
 .movers li .text { margin-left: auto; color: var(--ice); }
 .movers li .text:hover { color: var(--fg); }
 .movers .sub { color: var(--muted); font-size: 12px; }
+.text.ice { color: var(--ice); }
+.text.ice:hover { color: var(--fg); }
+.measure { width: 100%; max-width: 620px; }
+.note-line.error { color: var(--warn); }
+.lens { width: 100%; max-width: 620px; display: grid; gap: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.lens-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted-strong); }
+.lens-head .text { margin-left: auto; }
+.lens-summary { margin: 0; font-size: 15px; line-height: 23px; color: var(--fg); }
+.lens-title { margin: 6px 0 0; font-size: 13px; line-height: 18px; font-weight: 500; color: var(--fg); display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.lens-title span { font-size: 11px; font-weight: 400; color: var(--muted); }
+.chart { width: 100%; min-width: 0; }
+.chart .recharts-surface { overflow: visible; }
+.chart-tip { background: var(--surface); border: 1px solid var(--line-strong); border-radius: 4px; padding: 6px 8px; font-size: 11px; line-height: 16px; color: var(--muted-strong); }
+.chart-legend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 11px; line-height: 16px; color: var(--muted-strong); }
+.chart-legend li { display: inline-flex; align-items: center; gap: 6px; }
+.chart-legend i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+.chart-legend i.hollow { background: none; border: 1px solid var(--muted-strong); }
+.chart-legend .sub { color: var(--muted); }
+.chips.wrap { flex-wrap: wrap; gap: 2px 12px; }
+.lens-data summary { cursor: pointer; font-size: 13px; color: var(--muted-strong); min-height: 32px; display: flex; align-items: center; }
+.lens-data table { width: 100%; border-collapse: collapse; font-size: 12px; line-height: 18px; margin: 4px 0 8px; }
+.lens-data th { text-align: left; font-weight: 500; color: var(--muted); border-bottom: 1px solid var(--line-strong); padding: 4px 8px 4px 0; }
+.lens-data td { color: var(--muted-strong); border-bottom: 1px solid var(--line); padding: 4px 8px 4px 0; }
 .legend { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 12px; line-height: 17px; color: var(--muted-strong); }
 .legend svg { flex: none; }
 
@@ -137,7 +170,7 @@ a { color: inherit; }
   .target { grid-column: 1 / -1; grid-row: 2; grid-template-columns: 1fr auto; }
   .viewer { grid-template-columns: 1fr; gap: 14px; }
   .stage-wrap { order: 1; }
-  .rail { order: 2; justify-items: start !important; grid-auto-flow: row; gap: 12px; }
+  .rail { order: 2; justify-items: start !important; grid-auto-flow: row; gap: 12px; margin-top: 0 !important; }
   .rail.left .group, .rail .group { justify-items: start; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 14px; }
   .rail.left .opt { flex-direction: row; }
   .rail .eyebrow { width: 100%; }

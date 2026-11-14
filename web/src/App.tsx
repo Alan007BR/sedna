@@ -1,6 +1,7 @@
 // SEDNA: type coordinates, watch the SPHEREx sky change over time.
 // Code written with AI assistance (Claude); see AI_USAGE.md.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import BrightnessPanel from "./BrightnessPanel";
 import FilmPanel, { type Seed } from "./FilmPanel";
 import FocusPanel from "./FocusPanel";
 import MoversNote, { type MoversState } from "./MoversNote";
@@ -18,16 +19,18 @@ const MODES: { id: Mode; label: string }[] = [
   { id: "focus", label: "Distance focus" },
 ];
 // fv: single-exposure visit (0-based; 1-based in the URL); ft: open the single exposures at this MJD
-type View = { ra: number; dec: number; fov: number; det: number; mode: Mode; target: string | null; gaia: boolean; invert: boolean; fps: number; fv: number; ft: number | null };
-const VIEW_DEFAULTS = { fov: 6, det: 2, mode: "blink" as Mode, gaia: true, invert: false, fps: 2, fv: 0, ft: null };
+// bp: brightness lens on a built-in target id, or on a point "ra,dec"
+type View = { ra: number; dec: number; fov: number; det: number; mode: Mode; target: string | null; gaia: boolean; invert: boolean; fps: number; fv: number; ft: number | null; bp: string | null };
+const VIEW_DEFAULTS = { fov: 6, det: 2, mode: "blink" as Mode, gaia: true, invert: false, fps: 2, fv: 0, ft: null, bp: null };
 
+// from the pipeline's wavelength maps (service/sedna/archive/wavelength.py), rounded outward
 const DETECTORS = [
-  { id: 1, range: "0.75–1.09 µm" },
-  { id: 2, range: "1.10–1.62 µm" },
-  { id: 3, range: "1.63–2.41 µm" },
-  { id: 4, range: "2.42–3.82 µm" },
-  { id: 5, range: "3.83–4.41 µm" },
-  { id: 6, range: "4.42–5.00 µm" },
+  { id: 1, range: "0.73–1.13 µm" },
+  { id: 2, range: "1.08–1.67 µm" },
+  { id: 3, range: "1.61–2.44 µm" },
+  { id: 4, range: "2.39–3.87 µm" },
+  { id: 5, range: "3.79–4.45 µm" },
+  { id: 6, range: "4.40–5.03 µm" },
 ];
 const FOVS = [4, 6, 10, 15];
 
@@ -41,7 +44,7 @@ function readView(): View | null {
   const mode = MODES.some((m) => m.id === p.get("mode")) ? (p.get("mode") as Mode) : "blink";
   const fv = Math.max(0, Math.min(20, Math.round(Number(p.get("visit")) || 1) - 1));
   const ft = p.has("t") && Number.isFinite(Number(p.get("t"))) ? Number(p.get("t")) : null;
-  return { ra, dec, fov, det, mode, target: p.get("target"), gaia: p.get("gaia") !== "0", invert: p.get("invert") === "1", fps: Number(p.get("speed")) || 2, fv, ft };
+  return { ra, dec, fov, det, mode, target: p.get("target"), gaia: p.get("gaia") !== "0", invert: p.get("invert") === "1", fps: Number(p.get("speed")) || 2, fv, ft, bp: p.get("bright") };
 }
 
 function writeView(v: View, push: boolean) {
@@ -57,6 +60,7 @@ function writeView(v: View, push: boolean) {
   if (v.fps !== 2) p.set("speed", String(v.fps));
   if (v.mode === "film" && v.fv > 0) p.set("visit", String(v.fv + 1));
   if (v.mode === "film" && v.ft !== null) p.set("t", v.ft.toFixed(5));
+  if (v.bp) p.set("bright", v.bp);
   const url = `${location.pathname}?${p}`;
   if (push) history.pushState(null, "", url);
   else history.replaceState(null, "", url);
@@ -79,6 +83,7 @@ export default function App() {
   const [health, setHealth] = useState<string | null>(null);
   const [seed, setSeed] = useState<Seed | null>(null);
   const [movers, setMovers] = useState<MoversState>({ kind: "loading" });
+  const [clickSky, setClickSky] = useState<{ ra: number; dec: number; star: boolean } | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const update = useCallback((patch: Partial<View>, push = false) => {
@@ -108,6 +113,7 @@ export default function App() {
     setGaia([]);
     setInput((cur) => cur || (targets.find((t) => t.id === view.target)?.name ?? `${view.ra.toFixed(5)} ${view.dec.toFixed(5)}`));
     setPicked(null);
+    setClickSky(null);
     fetchStack(view.ra, view.dec, view.fov, ctrl.signal)
       .then((s) => {
         setStack(s);
@@ -181,7 +187,7 @@ export default function App() {
 
   function go(ra: number, dec: number, targetId: string | null) {
     const base = view ?? VIEW_DEFAULTS;
-    const next: View = { ...base, mode: base.mode === "focus" ? "blink" : base.mode, ra, dec, target: targetId, fv: 0, ft: null };
+    const next: View = { ...base, mode: base.mode === "focus" ? "blink" : base.mode, ra, dec, target: targetId, fv: 0, ft: null, bp: null };
     writeView(next, true);
     setView(next);
     setInputError(null);
@@ -200,7 +206,7 @@ export default function App() {
       } catch {
         /* fall back to the approximate position; the focus panel reports the error */
       }
-      const next: View = { ...(view ?? VIEW_DEFAULTS), ra, dec, target: t.id, mode: "focus", fv: 0, ft: null };
+      const next: View = { ...(view ?? VIEW_DEFAULTS), ra, dec, target: t.id, mode: "focus", fv: 0, ft: null, bp: null };
       writeView(next, true);
       setView(next);
       setInputError(null);
@@ -273,9 +279,27 @@ export default function App() {
       const near = gaiaMarks
         .map((m) => ({ m, d: Math.hypot(m.x - (col + 0.5), m.y - (rowScreen + 0.5)) }))
         .sort((a, b) => a.d - b.d)[0];
-      setPicked(near && near.d < 2 ? near.m.s : null);
+      const star = near && near.d < 2 ? near.m : null;
+      setPicked(star ? star.s : null);
+      // measure on the Gaia star when one is under the pointer, otherwise on the pixel's centre
+      if (star) {
+        const pos = propagate(star.s.ra, star.s.dec, (star.s.pmRa ?? 0) / 1000, (star.s.pmDec ?? 0) / 1000, 2016.0, yearNow);
+        setClickSky({ ra: pos.ra, dec: pos.dec, star: true });
+      } else {
+        const c = gridToSky(col, row, stack.center, size, scale);
+        setClickSky({ ra: c.ra, dec: c.dec, star: false });
+      }
     }
   }
+
+  const lens = useMemo(() => {
+    if (!view?.bp) return null;
+    const t = targets.find((x) => x.id === view.bp);
+    if (t) return { ra: view.ra, dec: view.dec, target: t.id, label: t.name };
+    const [r, d] = view.bp.split(",").map(Number);
+    return Number.isFinite(r) && Number.isFinite(d) ? { ra: r, dec: d, target: null, label: "this point" } : null;
+  }, [view?.bp, view?.ra, view?.dec, targets]);
+  const lensMark = lens && !lens.target && stack ? toSvg(lens.ra, lens.dec) : null;
 
   const span = stack && stack.visits.length > 1 ? stack.visits[stack.visits.length - 1].midMjd - stack.visits[0].midMjd : 0;
   const shiftPx = (s: GaiaSource) => (Math.hypot(s.pmRa ?? 0, s.pmDec ?? 0) / 1000) * (span / 365.25) / scale;
@@ -409,6 +433,13 @@ export default function App() {
                   {gaiaMarks.map((m) => (
                     <circle key={m.s.id} cx={m.x} cy={m.y} r={1.5} fill="none" stroke={picked?.id === m.s.id ? "var(--fg)" : "var(--ice)"} strokeWidth={shiftPx(m.s) > 0.3 ? 0.2 : 0.1} opacity={shiftPx(m.s) > 0.3 ? 0.95 : 0.55} />
                   ))}
+                  {lensMark && (
+                    <g stroke="var(--ice)" strokeLinecap="round" strokeWidth={0.2}>
+                      {[[-3.2, 0, -1.8, 0], [1.8, 0, 3.2, 0], [0, -3.2, 0, -1.8], [0, 1.8, 0, 3.2]].map(([a, b, c, d], i) => (
+                        <line key={i} x1={lensMark.x + a} y1={lensMark.y + b} x2={lensMark.x + c} y2={lensMark.y + d} />
+                      ))}
+                    </g>
+                  )}
                   {predicted && (
                     <g stroke="var(--red-text)" strokeLinecap="round">
                       <polyline points={predicted.pts.map((p) => `${p.x},${p.y}`).join(" ")} fill="none" strokeWidth={0.14} strokeDasharray="0.6 0.6" />
@@ -430,6 +461,21 @@ export default function App() {
                 about {shiftPx(picked).toFixed(2)} pixel over the dates shown.
               </p>
             )}
+            {clickSky && !view.bp && (
+              <div className="focus-actions measure">
+                <button type="button" className="text ice" onClick={() => update({ bp: `${clickSky.ra.toFixed(5)},${clickSky.dec.toFixed(5)}` }, true)}>
+                  Measure brightness and spectrum {clickSky.star ? "of this star" : "here"}
+                </button>
+              </div>
+            )}
+            {target && target.kind !== "distance" && !view.bp && (
+              <div className="focus-actions measure">
+                <button type="button" className="text ice" onClick={() => update({ bp: target.id }, true)}>
+                  Measure {target.name}&rsquo;s brightness and spectrum
+                </button>
+              </div>
+            )}
+            {lens && <BrightnessPanel ra={lens.ra} dec={lens.dec} target={lens.target} label={lens.label} onClose={() => update({ bp: null }, true)} />}
             <MoversNote state={movers} onShow={(m) => update({ mode: "film", fv: m.visit, ft: m.closestMjd }, true)} />
             {target && <p className="note-line">{target.note}</p>}
           </section>
